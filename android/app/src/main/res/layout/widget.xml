@@ -5,14 +5,19 @@
     android:layout_height="match_parent"
     android:background="@drawable/widget_bg"
     android:orientation="vertical"
-    android:padding="12dp">
+    android:padding="1.5dp">
 
     <LinearLayout
         android:id="@+id/header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@drawable/widget_header_bg"
         android:gravity="center_vertical"
-        android:orientation="horizontal">
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="8dp"
+        android:paddingBottom="10dp">
 
         <LinearLayout
             android:id="@+id/head_text"
@@ -27,8 +32,8 @@
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:singleLine="true"
-                android:textColor="@color/w_text"
-                android:textSize="15sp"
+                android:textColor="@color/w_head_text"
+                android:textSize="17sp"
                 android:textStyle="bold" />
 
             <TextView
@@ -37,8 +42,8 @@
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:singleLine="true"
-                android:textColor="@color/w_muted"
-                android:textSize="12sp" />
+                android:textColor="@color/w_head_sub"
+                android:textSize="13sp" />
         </LinearLayout>
 
         <TextView
@@ -47,36 +52,38 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
             android:background="@drawable/chip_bg"
-            android:paddingStart="12dp"
-            android:paddingTop="6dp"
-            android:paddingEnd="12dp"
-            android:paddingBottom="6dp"
-            android:textColor="@color/w_accent"
-            android:textSize="13sp"
+            android:paddingStart="14dp"
+            android:paddingTop="7dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="7dp"
+            android:textColor="@color/w_head_text"
+            android:textSize="14sp"
             android:textStyle="bold" />
 
         <ImageView
             android:id="@+id/refresh"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
             android:layout_marginStart="2dp"
             android:contentDescription="@string/refresh"
-            android:padding="7dp"
+            android:padding="8dp"
             android:src="@drawable/ic_refresh" />
     </LinearLayout>
 
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="6dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="8dp">
 
         <ListView
             android:id="@+id/list"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:divider="@null"
-            android:dividerHeight="0dp"
+            android:divider="@color/w_divider"
+            android:dividerHeight="1dp"
             android:scrollbars="none" />
 
         <TextView
@@ -86,6 +93,6 @@
             android:gravity="center"
             android:padding="8dp"
             android:textColor="@color/w_muted"
-            android:textSize="14sp" />
+            android:textSize="15sp" />
     </FrameLayout>
 </LinearLayout>

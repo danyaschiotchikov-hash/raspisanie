@@ -23,6 +23,7 @@ icons.mkdir(parents=True, exist_ok=True)
 png(svg(192, 42, 0.58), icons / "icon-192.png")
 png(svg(512, 112, 0.58), icons / "icon-512.png")
 png(svg(512, 0, 0.46), icons / "icon-maskable-512.png")   # безопасная зона для маски Android
+png(svg(180, 0, 0.56), icons / "apple-touch-icon.png")     # iPhone сам скругляет углы
 
 res = ROOT / "android" / "app" / "src" / "main" / "res"
 for d, px in {"mipmap-mdpi": 48, "mipmap-hdpi": 72, "mipmap-xhdpi": 96, "mipmap-xxhdpi": 144, "mipmap-xxxhdpi": 192}.items():

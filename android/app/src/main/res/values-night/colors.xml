@@ -1,12 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="w_bg">#FF1B1A18</color>
-    <color name="w_text">#FFEEEBE6</color>
-    <color name="w_muted">#FFAAA298</color>
-    <color name="w_accent">#FFEB97A2</color>
-    <color name="w_personal">#FF74CBD3</color>
-    <color name="w_now">#FF74D6A3</color>
-    <color name="w_chip">#FF372226</color>
+    <color name="w_stroke">#FF3B3733</color>
+    <color name="w_head">#FF7A1E2B</color>
+    <color name="w_head_text">#FFFFFFFF</color>
+    <color name="w_head_sub">#E6FFFFFF</color>
+    <color name="w_chip">#40FFFFFF</color>
+    <color name="w_text">#FFF5F3EF</color>
+    <color name="w_muted">#FFCBC4BA</color>
+    <color name="w_past">#FF8A837A</color>
+    <color name="w_accent">#FFF0A3AD</color>
+    <color name="w_personal">#FF7ED3DA</color>
+    <color name="w_now">#FF7EDCA9</color>
+    <color name="w_divider">#FF2D2A27</color>
     <color name="status">#FF121110</color>
     <color name="window">#FF121110</color>
 </resources>

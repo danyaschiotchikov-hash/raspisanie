@@ -17,6 +17,9 @@
     x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>',
     info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>',
     phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/><rect x="8.5" y="5.5" width="7" height="5" rx="1"/></svg>',
+    apple: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.37 12.57c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.78-3.32-1.8-1.41-.14-2.76.83-3.47.83-.72 0-1.82-.81-3-.79-1.54.02-2.96.9-3.76 2.28-1.6 2.78-.41 6.9 1.15 9.16.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.77.74 2.98.72 1.23-.02 2.01-1.12 2.77-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.39-.92-2.41-3.65ZM14.1 5.8c.63-.77 1.06-1.83.94-2.9-.91.04-2.02.61-2.67 1.37-.58.67-1.1 1.76-.96 2.8 1.02.08 2.06-.52 2.69-1.27Z"/></svg>',
+    android: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.6 9.48 19.44 6.3a.38.38 0 0 0-.66-.38l-1.87 3.23a11.43 11.43 0 0 0-9.82 0L5.22 5.92a.38.38 0 0 0-.66.38L6.4 9.48A10.78 10.78 0 0 0 1 18h22a10.78 10.78 0 0 0-5.4-8.52ZM7 15.25a1.25 1.25 0 1 1 1.25-1.25A1.25 1.25 0 0 1 7 15.25Zm10 0A1.25 1.25 0 1 1 18.25 14 1.25 1.25 0 0 1 17 15.25Z"/></svg>',
+    share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>',
     print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
   };
 
@@ -578,31 +581,56 @@
   }
   const refreshListDialog = () => { if ($("#dlg-list").open) openList(); };
 
-  // ------------------------------------------------------------ подвал
+  // ------------------------------------------------------------ приложения: Android и iPhone
   let installEvt = null;
   let apkAvailable = false;
+  const QS = new URLSearchParams(location.search);
+  const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1) || QS.has("ios");
+  const STANDALONE = navigator.standalone === true || window.matchMedia("(display-mode: standalone)").matches;
+  const inApp = () => !!(window.Android && window.Android.saveConfig);
+
+  function appCardsHTML() {
+    if (inApp()) return "";
+    const cards = [];
+    const ios = `<div class="appcard"><div class="ph">${ICON.apple}</div><div class="grow"><b>${esc(t("iphoneTitle"))}</b><span>${esc(t("iphoneText"))}</span></div>
+      <div class="ac-btns"><button type="button" class="btn primary" data-ios>${esc(t("iphoneBtn"))}</button></div></div>`;
+    if (apkAvailable || installEvt) {
+      cards.push(`<div class="appcard"><div class="ph">${ICON.android}</div><div class="grow"><b>${esc(t("androidTitle"))}</b><span>${esc(t("androidText"))}</span></div>
+        <div class="ac-btns">${apkAvailable ? `<a class="btn primary" href="app/raspisanie.apk" download>${esc(t("download"))}</a>` : ""}
+        ${installEvt ? `<button type="button" class="btn" data-install>${esc(t("install"))}</button>` : ""}</div></div>`);
+    }
+    if (IS_IOS) cards.unshift(ios); else cards.push(ios);
+    return `<div class="apps">${cards.join("")}</div>`;
+  }
+
   function renderFoot() {
-    const inApp = !!(window.Android && window.Android.saveConfig);
     const gen = new Date(D.generated);
     const genStr = L() === "zh" ? `${gen.getMonth() + 1}月${gen.getDate()}日 ${pad(gen.getHours())}:${pad(gen.getMinutes())}` : `${fmtDM(gen)}, ${pad(gen.getHours())}:${pad(gen.getMinutes())}`;
-    let app = "";
-    if (!inApp && (apkAvailable || installEvt)) {
-      app = `<div class="appcard"><div class="ph">${ICON.phone}</div><div class="grow"><b>${esc(t("widgetTitle"))}</b><span>${esc(t("widgetText"))}</span></div>
-        ${apkAvailable ? `<a class="btn primary" href="app/raspisanie.apk" download>${esc(t("download"))}</a>` : ""}
-        ${installEvt ? `<button type="button" class="btn" data-install>${esc(t("install"))}</button>` : ""}</div>`;
-    }
-    $("#foot").innerHTML = `${app}
+    $("#foot").innerHTML = `${appCardsHTML()}
       <details><summary>${esc(t("sources", D.sources.length))} · ${esc(t("updated", genStr))}</summary>
         <ul>${D.sources.map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(trProgram(s))} — ${esc(trCourse(s))}</a>${s.updated ? " · " + esc(fmtIso(s.updated)) : ""}</li>`).join("")}</ul>
       </details>
       <p>${esc(t("disclaimer"))}</p>`;
     const ib = $("[data-install]", $("#foot"));
     if (ib) ib.onclick = async () => { installEvt.prompt(); await installEvt.userChoice; installEvt = null; renderFoot(); };
+    $$("[data-ios]", $("#foot")).forEach((b) => (b.onclick = openIOS));
+    renderBanner();
   }
 
-  // ------------------------------------------------------------ Android: передаём настройки виджету
-  function pushToAndroid() {
-    if (!D || !window.Android || !window.Android.saveConfig) return;
+  // на iPhone в Safari — заметная кнопка установки вверху страницы
+  function renderBanner() {
+    const box = $("#banner");
+    if (!IS_IOS || STANDALONE || inApp() || prefs.iosBannerClosed) { box.innerHTML = ""; return; }
+    box.innerHTML = `<div class="banner"><div class="ph">${ICON.apple}</div>
+      <div class="grow"><b>${esc(t("iosBanner"))}</b><span>${esc(t("iosBannerText"))}</span></div>
+      <button type="button" class="btn primary" data-ios>${esc(t("howTo"))}</button>
+      <button type="button" class="btn icon-btn ghost" data-hide aria-label="${esc(t("close"))}">${ICON.x}</button></div>`;
+    $("[data-ios]", box).onclick = openIOS;
+    $("[data-hide]", box).onclick = () => { prefs.iosBannerClosed = true; savePrefs(); renderBanner(); };
+  }
+
+  // настройки для виджетов: группа, язык, личные занятия и переводы названий
+  function widgetConfig() {
     const key = prefs.myGroup || prefs.group;
     const g = key && idx.groupByKey[key];
     const tr = {};
@@ -612,15 +640,80 @@
         l.rooms.forEach((r) => (tr[r] = trRoom(r)));
       });
     }
-    const cfg = {
+    return {
+      site: new URL(".", location.href).href,
+      dataUrl: new URL("data/schedule.json", location.href).href,
       groupKey: g ? g.key : null,
       groupTitle: g ? `${trGroup(g.name)} · ${shortSource(idx.source[g.source])}` : "",
       lang: L(),
       personal: prefs.personal,
-      dataUrl: new URL("data/schedule.json", location.href).href,
       tr,
     };
-    try { window.Android.saveConfig(JSON.stringify(cfg)); } catch { /* старая версия приложения */ }
+  }
+  function pushToAndroid() {
+    if (!D || !inApp()) return;
+    try { window.Android.saveConfig(JSON.stringify(widgetConfig())); } catch { /* старая версия приложения */ }
+  }
+
+  // Копирование в буфер: сначала через выделение (надёжно в Safari на iPhone), потом Clipboard API.
+  // Временное поле кладём внутрь открытого диалога — всё вне модального окна недоступно.
+  function copyText(text, host) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.contentEditable = "true";
+    ta.style.cssText = "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;font-size:16px";
+    host.appendChild(ta);
+    const range = document.createRange();
+    range.selectNodeContents(ta);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    ta.setSelectionRange(0, text.length);
+    let ok = false;
+    try { ok = document.execCommand("copy"); } catch { ok = false; }
+    ta.remove();
+    sel.removeAllRanges();
+    if (ok) return Promise.resolve();
+    return navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject(new Error("no clipboard"));
+  }
+
+  // iPhone: приложение на экран «Домой» + виджет через Scriptable
+  let widgetTemplate = null;
+  async function openIOS() {
+    const dlg = $("#dlg-item");
+    const cfg = widgetConfig();
+    // шаблон скачиваем заранее: Safari разрешает копирование только сразу после нажатия
+    try { widgetTemplate ||= await (await fetch("ios/widget.js", { cache: "no-cache" })).text(); } catch { widgetTemplate = null; }
+    const code = widgetTemplate ? widgetTemplate.replace("/*CONFIG*/{}", JSON.stringify(cfg, null, 1)) : "";
+    const ready = !!code && !!(cfg.groupKey || cfg.personal.length);
+    const steps = (arr) => `<ol class="steps">${arr.map((x) => `<li>${esc(x)
+      .replace("{share}", `<span class="ios-ico">${ICON.share}</span>`)
+      .replace("{scriptable}", `<a href="https://scriptable.app/" target="_blank" rel="noopener">Scriptable</a>`)}</li>`).join("")}</ol>`;
+    const siteUrl = location.href.split("#")[0].split("?")[0];
+    dlg.innerHTML = `<div class="dlg">
+      <div class="dlg-head"><h3>${esc(t("iosDlgTitle"))}</h3><button type="button" class="btn icon-btn ghost" data-close aria-label="${esc(t("close"))}">${ICON.x}</button></div>
+      <div class="dlg-body">
+        <h4>${esc(t("iosStep1Title"))}</h4>
+        ${steps(t("iosSteps1"))}
+        <p class="note-muted">${esc(t("iosStep1Note"))}</p>
+        ${IS_IOS ? "" : `<p class="note-muted">${esc(t("iosOpenOnPhone"))} <b class="url">${esc(siteUrl)}</b></p>`}
+        <h4>${esc(t("iosStep2Title"))}</h4>
+        ${steps(t("iosSteps2"))}
+        ${cfg.groupKey ? `<p class="note-muted">${esc(t("iosScriptFor"))} <b>${esc(cfg.groupTitle)}</b>. ${esc(t("scriptPersonalNote"))}</p>`
+          : `<p class="warn">${esc(t("scriptNeedsGroup"))}</p>`}
+        <textarea class="code" readonly hidden aria-label="Scriptable"></textarea>
+      </div>
+      <div class="dlg-foot">
+        <button type="button" class="btn" data-close>${esc(t("close"))}</button>
+        <button type="button" class="btn primary" data-copy ${ready ? "" : "disabled"}>${esc(t("copyScript"))}</button>
+      </div></div>`;
+    $$("[data-close]", dlg).forEach((b) => (b.onclick = () => dlg.close()));
+    $("[data-copy]", dlg).onclick = () => {
+      const ta = $("textarea.code", dlg);
+      const fallback = () => { ta.hidden = false; ta.value = code; ta.focus(); ta.select(); toast(t("copyFail"), 6000); };
+      copyText(code, dlg).then(() => toast(t("copied"), 5000), fallback);
+    };
+    showDialog(dlg);
   }
 
   // ------------------------------------------------------------ сборка страницы
