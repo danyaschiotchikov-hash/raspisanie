@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.cache/
+.claude/
+build.log
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.iml
+.idea/
+
+# APK собирается в GitHub Actions
+site/app/

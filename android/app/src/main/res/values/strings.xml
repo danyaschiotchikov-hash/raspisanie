@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Расписание</string>
+    <string name="widget_name">Расписание</string>
+    <string name="widget_desc">Занятия на сегодня или на неделю вперёд</string>
+    <string name="refresh">Обновить</string>
+</resources>

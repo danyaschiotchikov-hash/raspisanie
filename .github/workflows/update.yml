@@ -1,0 +1,122 @@
+name: Обновление расписания
+
+on:
+  schedule:
+    - cron: "15 3 * * *"   # каждый день в 06:15 по Москве
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Скачать расписание с glazunovcons.ru
+        id: scrape
+        continue-on-error: true
+        run: |
+          pip install -r requirements.txt
+          python scraper.py --out site/data
+
+      - name: Предупреждение, если сайт консерватории недоступен
+        if: steps.scrape.outcome != 'success'
+        run: echo "::warning::Не удалось скачать расписание с glazunovcons.ru — опубликованы прежние данные"
+
+      - name: Сохранить данные, если расписание изменилось
+        if: steps.scrape.outcome == 'success'
+        run: |
+          changed=$(python - <<'PY'
+          import json, subprocess
+          new = json.load(open("site/data/schedule.json", encoding="utf-8"))
+          try:
+              old = json.loads(subprocess.run(["git", "show", "HEAD:site/data/schedule.json"], capture_output=True, check=True).stdout)
+          except Exception:
+              old = {}
+          strip = lambda d: {k: v for k, v in d.items() if k != "generated"}
+          print("yes" if strip(new) != strip(old) else "no")
+          PY
+          )
+          echo "Расписание изменилось: $changed"
+          if [ "$changed" = "yes" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add site/data/schedule.json
+            git commit -m "Расписание обновлено $(date -u +%Y-%m-%d)"
+            git pull --rebase && git push
+          fi
+
+      - name: Адрес сайта
+        id: site
+        run: |
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          repo="${GITHUB_REPOSITORY#*/}"
+          if [ "${repo,,}" = "${owner}.github.io" ]; then url="https://${owner}.github.io/"; else url="https://${owner}.github.io/${repo}/"; fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Сайт: $url"
+
+      - name: Готовый APK из кэша
+        id: apk
+        uses: actions/cache@v4
+        with:
+          path: site/app/raspisanie.apk
+          key: apk-v1-${{ hashFiles('android/**') }}-${{ steps.site.outputs.url }}
+
+      - uses: actions/setup-java@v4
+        if: steps.apk.outputs.cache-hit != 'true'
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.apk.outputs.cache-hit != 'true'
+        with:
+          gradle-version: "8.9"
+
+      - name: Собрать Android-приложение с виджетом
+        id: android
+        if: steps.apk.outputs.cache-hit != 'true'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          gradle -p android assembleRelease --no-daemon \
+            -PsiteUrl="${{ steps.site.outputs.url }}" -PversionCode=${{ github.run_number }} 2>&1 | tee build.log
+          mkdir -p site/app
+          cp android/app/build/outputs/apk/release/app-release.apk site/app/raspisanie.apk
+
+      - name: Ошибки сборки Android
+        if: steps.android.outcome == 'failure'
+        run: |
+          grep -E "error:|e: |\.java:[0-9]+|What went wrong|Could not|FAILED|Exception" build.log | head -40 | while IFS= read -r line; do
+            echo "::error::${line}"
+          done
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

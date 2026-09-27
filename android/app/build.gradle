@@ -1,0 +1,51 @@
+plugins {
+    id 'com.android.application'
+}
+
+// Адрес сайта на GitHub Pages подставляет сборка в GitHub Actions: -PsiteUrl=https://…/
+def siteUrl = (project.findProperty('siteUrl') ?: 'https://example.github.io/raspisanie/').toString()
+
+android {
+    namespace 'app.raspisanie'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'app.raspisanie'
+        minSdk 26
+        targetSdk 34
+        versionCode Integer.parseInt((project.findProperty('versionCode') ?: '1').toString())
+        versionName '1.0'
+        buildConfigField 'String', 'SITE_URL', "\"${siteUrl}\""
+    }
+
+    buildFeatures {
+        buildConfig true
+    }
+
+    // Постоянный ключ подписи: без него каждое обновление требовало бы удалять приложение
+    signingConfigs {
+        release {
+            storeFile file('release.jks')
+            storePassword 'raspisanie'
+            keyAlias 'raspisanie'
+            keyPassword 'raspisanie'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}

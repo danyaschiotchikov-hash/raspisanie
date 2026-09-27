@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">课程表</string>
+    <string name="widget_name">课程表</string>
+    <string name="widget_desc">今天或未来一周的课程</string>
+    <string name="refresh">刷新</string>
+</resources>
