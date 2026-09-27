@@ -1,9 +1,10 @@
 /* Работа без сети: оболочка приложения из кэша, расписание — сначала из сети. */
-const CACHE = "rasp-v3";
+const CACHE = "rasp-v4";
 const SHELL = ["./", "index.html", "app.css", "app.js", "i18n.js", "manifest.webmanifest", "icons/icon-192.png", "icons/favicon.svg"];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // cache: "reload" — мимо HTTP-кэша браузера, иначе новая версия подхватит старые файлы
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL.map((u) => new Request(u, { cache: "reload" })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener("activate", (e) => {
@@ -18,7 +19,7 @@ self.addEventListener("fetch", (e) => {
   // расписание и страница: сеть, при её отсутствии — сохранённая копия
   if (url.pathname.endsWith("/data/schedule.json") || e.request.mode === "navigate") {
     e.respondWith(
-      fetch(e.request).then((r) => {
+      fetch(e.request, { cache: "no-cache" }).then((r) => {
         if (r.ok) { const copy = r.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); }
         return r;
       }).catch(() => caches.match(e.request, { ignoreSearch: true }).then((r) => r || caches.match("index.html")))
@@ -28,7 +29,7 @@ self.addEventListener("fetch", (e) => {
   // остальное: из кэша, в фоне обновляем
   e.respondWith(
     caches.match(e.request).then((cached) => {
-      const net = fetch(e.request).then((r) => {
+      const net = fetch(e.request, { cache: "no-cache" }).then((r) => {
         if (r.ok) { const copy = r.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); }
         return r;
       }).catch(() => cached);
