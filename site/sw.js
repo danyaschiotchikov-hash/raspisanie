@@ -1,5 +1,5 @@
 /* Работа без сети: оболочка приложения из кэша, расписание — сначала из сети. */
-const CACHE = "rasp-v2";
+const CACHE = "rasp-v3";
 const SHELL = ["./", "index.html", "app.css", "app.js", "i18n.js", "manifest.webmanifest", "icons/icon-192.png", "icons/favicon.svg"];
 
 self.addEventListener("install", (e) => {

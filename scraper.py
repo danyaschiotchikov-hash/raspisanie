@@ -464,7 +464,7 @@ def build(data_dir: Path, cache_dir: Path | None = None, log=print) -> dict:
             teachers[t] = teachers.get(t, 0) + 1
 
     data = {
-        "generated": dt.datetime.now().isoformat(timespec="seconds"),
+        "generated": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
         "semester": {"year": year, "sem": sem,
                      "label": f"{sem} семестр {year}/{year + 1} учебного года"},
         "sources": sorted(sources, key=lambda s: (s["order"], s["course"] or 0)),

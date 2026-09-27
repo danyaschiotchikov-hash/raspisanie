@@ -695,7 +695,9 @@
     }, 60000);
 
     // локальный сервер умеет обновлять данные с сайта
-    fetch("api/status").then((r) => r.ok && r.json()).then((j) => { if (j && j.local) $("#btn-refresh").hidden = false; }).catch(() => {});
+    if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
+      fetch("api/status").then((r) => r.ok && r.json()).then((j) => { if (j && j.local) $("#btn-refresh").hidden = false; }).catch(() => {});
+    }
     // APK для Android публикуется рядом с сайтом
     fetch("app/raspisanie.apk", { method: "HEAD" }).then((r) => { apkAvailable = r.ok && !/html/.test(r.headers.get("content-type") || ""); renderFoot(); }).catch(() => {});
   }
