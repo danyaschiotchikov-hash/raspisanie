@@ -7,11 +7,11 @@
   --faint: #9f978c;
   --line: #e7e1d8;
   --line-strong: #d8d0c4;
-  --accent: #8c2331;
-  --accent-hover: #741c28;
+  --accent: #83409b;
+  --accent-hover: #6d3581;
   --accent-ink: #ffffff;
-  --accent-soft: #f6e8ea;
-  --accent-line: #e6c7cc;
+  --accent-soft: #f3ebf6;
+  --accent-line: #dfcce6;
   --personal: #1d6b74;
   --personal-soft: #e2f0f1;
   --personal-line: #b9dadd;
@@ -19,6 +19,8 @@
   --now-soft: #e3f3e9;
   --par: #946510;
   --par-soft: #f7efdb;
+  --emblem-violet: #83409b;
+  --emblem-gray: #91989d;
   --shadow: 0 1px 2px rgba(45, 32, 20, .05), 0 8px 24px rgba(45, 32, 20, .06);
   --shadow-lg: 0 12px 48px rgba(30, 20, 10, .22);
   --radius: 16px;
@@ -31,7 +33,7 @@
     --bg: #121110; --surface: #1b1a18; --surface-2: #22201e; --text: #eeebe6; --muted: #aaa298; --faint: #7b746b;
     --line: #2d2a27; --line-strong: #3b3733; --accent: #eb97a2; --accent-hover: #f2b0b8; --accent-ink: #1d0c10;
     --accent-soft: #372226; --accent-line: #5a333a; --personal: #74cbd3; --personal-soft: #16302f; --personal-line: #2b5559;
-    --now: #74d6a3; --now-soft: #15301f; --par: #e7bf6a; --par-soft: #33291a;
+    --now: #74d6a3; --now-soft: #15301f; --par: #e7bf6a; --par-soft: #33291a; --emblem-violet: #b57fcc;
     --shadow: 0 1px 0 rgba(255,255,255,.02); --shadow-lg: 0 12px 48px rgba(0,0,0,.6); color-scheme: dark;
   }
 }
@@ -39,7 +41,7 @@
   --bg: #121110; --surface: #1b1a18; --surface-2: #22201e; --text: #eeebe6; --muted: #aaa298; --faint: #7b746b;
   --line: #2d2a27; --line-strong: #3b3733; --accent: #eb97a2; --accent-hover: #f2b0b8; --accent-ink: #1d0c10;
   --accent-soft: #372226; --accent-line: #5a333a; --personal: #74cbd3; --personal-soft: #16302f; --personal-line: #2b5559;
-  --now: #74d6a3; --now-soft: #15301f; --par: #e7bf6a; --par-soft: #33291a;
+  --now: #74d6a3; --now-soft: #15301f; --par: #e7bf6a; --par-soft: #33291a; --emblem-violet: #b57fcc;
   --shadow: 0 1px 0 rgba(255,255,255,.02); --shadow-lg: 0 12px 48px rgba(0,0,0,.6); color-scheme: dark;
 }
 html[lang="zh"] { --serif: "Songti SC", "Noto Serif SC", "SimSun", serif; }
@@ -57,8 +59,11 @@ a { color: var(--accent); }
 /* ---------- шапка */
 .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 0 14px; }
 .brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
-.brand .mark { width: 40px; height: 40px; border-radius: 12px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; flex: none; }
-.brand .mark svg { width: 22px; height: 22px; }
+.brand .mark { width: 34px; height: 48px; flex: none; }
+.brand .mark svg { display: block; width: 100%; height: 100%; }
+.emblem .v { fill: var(--emblem-violet); }
+.emblem .g { fill: var(--emblem-gray); }
+.emblem .k { fill: var(--text); }
 .brand h1 { margin: 0; font: 600 23px/1.1 var(--serif); letter-spacing: -.01em; }
 .brand p { margin: 2px 0 0; color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .actions { display: flex; align-items: center; gap: 8px; flex: none; }
@@ -292,7 +297,7 @@ dialog::backdrop { background: rgba(20, 14, 10, .45); backdrop-filter: blur(2px)
 @media (max-width: 520px) {
   .top { padding-top: 14px; }
   .brand h1 { font-size: 20px; }
-  .brand .mark { width: 36px; height: 36px; }
+  .brand .mark { width: 30px; height: 42px; }
   .actions .btn .lbl { display: none; }
   .actions .btn { padding: 0; width: 36px; }
   .kv { grid-template-columns: 1fr; gap: 2px; }
