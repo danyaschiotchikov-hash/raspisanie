@@ -14,3 +14,6 @@ android/local.properties
 
 # APK собирается в GitHub Actions
 site/app/
+
+# Данные сервера учебного отдела: пароли, ключ Web Push, подписки
+server-data/

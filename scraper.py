@@ -451,7 +451,7 @@ def build(data_dir: Path, cache_dir: Path | None = None, log=print) -> dict:
     final = []
     for i, it in enumerate(sorted(merged.values(), key=lambda x: (x["day"], x["start"], x["end"]))):
         final.append({
-            "id": i, "day": it["day"], "start": it["start"], "end": it["end"],
+            "id": i, "key": lesson_key(it), "day": it["day"], "start": it["start"], "end": it["end"],
             "slot": f"{it['slot0']}–{it['slot1']}",
             "exact": [f"{a}–{b}" for a, b in it["times"]],
             "subject": it["subject"], "teachers": it["teachers"], "rooms": it["rooms"],
@@ -475,6 +475,13 @@ def build(data_dir: Path, cache_dir: Path | None = None, log=print) -> dict:
     (data_dir / "schedule.json").write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), "utf-8")
     log(f"Готово: {len(groups)} групп, {len(final)} занятий, {len(teachers)} преподавателей")
     return data
+
+
+def lesson_key(l: dict) -> str:
+    """Постоянный ключ занятия: к нему привязаны изменения учебного отдела (id меняется при каждом разборе)."""
+    raw = "|".join([str(l["day"]), l["start"], l["end"], re.sub(r"\W", "", l["subject"].lower()),
+                    ",".join(l["teachers"]), ",".join(l["rooms"])])
+    return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:10]
 
 
 def _minus(hhmm: str, minutes: int) -> str:
