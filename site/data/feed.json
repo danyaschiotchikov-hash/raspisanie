@@ -1,5 +1,5 @@
 {
- "rev": 5,
+ "rev": 6,
  "changes": [
   {
    "id": "c4befa89c1d",
@@ -144,37 +144,6 @@
     "2_kurs_knr_1_semestr_2026-2027.pdf#Фортепиано (спец)",
     "2_kurs_knr_1_semestr_2026-2027.pdf#Духовые (спец)",
     "2_kurs_knr_1_semestr_2026-2027.pdf#Вокал (бак)"
-   ],
-   "note": "Болезнь преподавателя",
-   "created": "2026-09-28T23:22:51+03:00"
-  },
-  {
-   "id": "c3870b74c70",
-   "type": "cancel",
-   "lesson": "634815ad1d",
-   "date": "2026-10-03",
-   "start": "16:45",
-   "end": "18:15",
-   "subject": "Педагогическая практика (лекции)",
-   "teachers": [
-    "Анцева В.П."
-   ],
-   "rooms": [
-    "Каб. 7"
-   ],
-   "groups": [
-    "5_kurs_rf_1_semestr_2026-2027.pdf#Духовые (спец)",
-    "mag_1_kurs_rf_1_semestr_2026-2027.pdf#Фортепиано",
-    "mag_1_kurs_rf_1_semestr_2026-2027.pdf#Духовые",
-    "mag_1_kurs_rf_1_semestr_2026-2027.pdf#Народные",
-    "mag_1_kurs_rf_1_semestr_2026-2027.pdf#Вокал",
-    "mag_1_kurs_rf_1_semestr_2026-2027.pdf#Дирижирование академическим хором",
-    "mag_1_kurs_rf_1_semestr_2026-2027.pdf#Музыкальная педагогика",
-    "mag_2_kurs_rf_1_semestr_2026-2027.pdf#Музыковедение",
-    "mag_1_kurs_knr_1_semestr_2026-2027.pdf#Фортепиано",
-    "mag_1_kurs_knr_1_semestr_2026-2027.pdf#Духовые",
-    "mag_1_kurs_knr_1_semestr_2026-2027.pdf#Струнные",
-    "mag_1_kurs_knr_1_semestr_2026-2027.pdf#Народные"
    ],
    "note": "Болезнь преподавателя",
    "created": "2026-09-28T23:22:51+03:00"
