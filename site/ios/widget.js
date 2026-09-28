@@ -14,12 +14,12 @@ const MONTHS = ["января", "февраля", "марта", "апреля", 
 // Контрастные цвета: светлая и тёмная тема iPhone
 const C = {
   bg: Color.dynamic(new Color("#FFFFFF"), new Color("#1B1A18")),
-  head: Color.dynamic(new Color("#8C2331"), new Color("#7A1E2B")),
+  head: Color.dynamic(new Color("#83409B"), new Color("#7A1E2B")),
   headText: new Color("#FFFFFF"),
   text: Color.dynamic(new Color("#111111"), new Color("#F5F3EF")),
   muted: Color.dynamic(new Color("#3D3833"), new Color("#CBC4BA")),
   past: new Color("#8A837A"),
-  accent: Color.dynamic(new Color("#8C2331"), new Color("#F0A3AD")),
+  accent: Color.dynamic(new Color("#83409B"), new Color("#F0A3AD")),
   personal: Color.dynamic(new Color("#14606A"), new Color("#7ED3DA")),
   now: Color.dynamic(new Color("#157040"), new Color("#7EDCA9")),
 };

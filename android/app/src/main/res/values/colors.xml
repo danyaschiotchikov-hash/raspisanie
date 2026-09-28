@@ -3,17 +3,17 @@
     <!-- Виджет: белая карточка с рамкой и шапкой в фирменном цвете — не сливается со светлыми обоями -->
     <color name="w_bg">#FFFFFFFF</color>
     <color name="w_stroke">#FFC9BFB1</color>
-    <color name="w_head">#FF8C2331</color>
+    <color name="w_head">#FF83409B</color>
     <color name="w_head_text">#FFFFFFFF</color>
     <color name="w_head_sub">#E6FFFFFF</color>
     <color name="w_chip">#40FFFFFF</color>
     <color name="w_text">#FF111111</color>
     <color name="w_muted">#FF3D3833</color>
     <color name="w_past">#FF8A837A</color>
-    <color name="w_accent">#FF8C2331</color>
+    <color name="w_accent">#FF83409B</color>
     <color name="w_personal">#FF14606A</color>
     <color name="w_now">#FF157040</color>
     <color name="w_divider">#FFE6DFD5</color>
-    <color name="status">#FF8C2331</color>
+    <color name="status">#FF83409B</color>
     <color name="window">#FFF4F1EC</color>
 </resources>
