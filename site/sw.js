@@ -1,5 +1,5 @@
 /* Работа без сети: оболочка приложения из кэша, расписание — сначала из сети. */
-const CACHE = "rasp-v6";
+const CACHE = "rasp-v7";
 const SHELL = ["./", "index.html", "app.css", "app.js", "i18n.js", "manifest.webmanifest", "icons/icon-192.png", "icons/favicon.svg"];
 
 self.addEventListener("install", (e) => {
@@ -16,8 +16,8 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== location.origin || url.pathname.endsWith(".apk")) return;
 
-  // расписание и страница: сеть, при её отсутствии — сохранённая копия
-  if (url.pathname.endsWith("/data/schedule.json") || e.request.mode === "navigate") {
+  // расписание, изменения и страница: сеть, при её отсутствии — сохранённая копия
+  if (url.pathname.endsWith("/data/schedule.json") || url.pathname.endsWith("/data/feed.json") || e.request.mode === "navigate") {
     e.respondWith(
       fetch(e.request, { cache: "no-cache" }).then((r) => {
         if (r.ok) { const copy = r.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); }

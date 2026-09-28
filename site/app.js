@@ -21,12 +21,15 @@
     android: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.6 9.48 19.44 6.3a.38.38 0 0 0-.66-.38l-1.87 3.23a11.43 11.43 0 0 0-9.82 0L5.22 5.92a.38.38 0 0 0-.66.38L6.4 9.48A10.78 10.78 0 0 0 1 18h22a10.78 10.78 0 0 0-5.4-8.52ZM7 15.25a1.25 1.25 0 1 1 1.25-1.25A1.25 1.25 0 0 1 7 15.25Zm10 0A1.25 1.25 0 1 1 18.25 14 1.25 1.25 0 0 1 17 15.25Z"/></svg>',
     share: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/></svg>',
     print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>',
+    bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>',
+    alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>',
   };
 
   // ------------------------------------------------------------ настройки
   const LS_KEY = "rasp.v2";
   const prefs = Object.assign(
-    { lang: (navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "ru", myGroup: null, mode: "group", group: null, teacher: null, personal: [] },
+    { lang: (navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "ru", myGroup: null, mode: "group", group: null, teacher: null, personal: [],
+      push: false, pushSynced: "", noticeSeen: "" },
     readLS()
   );
   function readLS() { try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch { return {}; } }
@@ -99,14 +102,53 @@
 
   function setData(data) {
     D = data;
-    idx = { source: {}, group: {}, groupByKey: {}, byGroup: {}, byTeacher: {} };
+    idx = { source: {}, group: {}, groupByKey: {}, byGroup: {}, byTeacher: {}, byKey: {} };
     D.sources.forEach((s) => (idx.source[s.id] = s));
     D.groups.forEach((g) => { idx.group[g.id] = g; idx.groupByKey[g.key] = g; });
     D.lessons.forEach((l) => {
+      if (l.key) idx.byKey[l.key] = l;
       l.groups.forEach((g) => (idx.byGroup[g] ||= []).push(l));
       l.teachers.forEach((x) => (idx.byTeacher[x] ||= []).push(l));
     });
   }
+
+  // ------------------------------------------------------------ изменения и объявления учебного отдела
+  // Лента — обычный файл рядом с расписанием: учебный отдел публикует его из своей панели через GitHub.
+  const FEED_URL = "data/feed.json";
+  const FEED_LS = "rasp.feed";
+  let feed = { rev: 0, changes: [], notices: [] };
+  let feedOk = false;
+  const chIdx = { occ: new Map(), extra: [] };
+
+  function setFeed(f) {
+    feed = { rev: f.rev || 0, changes: f.changes || [], notices: [...(f.notices || [])].sort((a, b) => b.time.localeCompare(a.time)) };
+    chIdx.occ = new Map();
+    chIdx.extra = [];
+    feed.changes.forEach((c) => {
+      if (c.type === "add") chIdx.extra.push(c);
+      else {
+        chIdx.occ.set(c.lesson + "@" + c.date, c);
+        if (c.type === "change") chIdx.extra.push(c);
+      }
+    });
+  }
+  const isMove = (c) => c.type === "change" && (c.to.date !== c.date || c.to.start !== c.start || c.to.end !== c.end);
+  const keysToIds = (keys) => keys.map((k) => idx.groupByKey[k]?.id).filter(Boolean);
+  // занятие из изменения: исходное из расписания или сохранённый в изменении снимок
+  function changeLesson(c) {
+    const base = c.lesson && idx.byKey[c.lesson];
+    const l = base ? { ...base } : { id: "c" + c.id, key: c.lesson, day: (parseYmd(c.date).getDay() + 6) % 7, start: c.start, end: c.end,
+      subject: c.subject, teachers: c.teachers, rooms: c.rooms, groups: keysToIds(c.groups), exact: [], text: "" };
+    if (c.type !== "change") return l;
+    const timeSame = c.to.start === l.start && c.to.end === l.end;
+    return { ...l, start: c.to.start, end: c.to.end, teachers: c.to.teachers, rooms: c.to.rooms, exact: timeSame ? l.exact : [] };
+  }
+  // относится ли изменение к открытому расписанию (группе или преподавателю)
+  function changeInView(c, teachers) {
+    if (st.mode === "group") return !!st.groupId && c.groups.includes(idx.group[st.groupId].key);
+    return !!st.teacher && teachers.includes(st.teacher);
+  }
+  const trReason = (s) => (L() === "zh" && Z.reasons[s]) || s;
   function selectGroupKey(key) {
     const g = key && idx.groupByKey[key];
     if (!g) return false;
@@ -172,12 +214,34 @@
     return [0, 1, 2, 3, 4, 5, 6].map((di) => {
       const date = addDays(monday, di), ds = ymd(date);
       const list = [];
-      lessons.filter((l) => l.day === di).forEach((l) => list.push({ kind: "lesson", id: `l${l.id}@${ds}`, start: l.start, end: l.end, l, ds }));
+      const lessonItem = (l, extra) => list.push({ kind: "lesson", id: `l${l.id}@${ds}`, start: l.start, end: l.end, l, ds, ...extra });
+      lessons.filter((l) => l.day === di).forEach((l) => {
+        const c = l.key && chIdx.occ.get(l.key + "@" + ds);
+        if (!c) return lessonItem(l);
+        if (c.type === "cancel") return lessonItem(l, { ch: c, cs: "cancel", off: true });
+        // перенесено в другое время или (для преподавателя) занятие отдали другому — здесь его уже нет
+        if (isMove(c)) return lessonItem(l, { ch: c, cs: "moved", off: true });
+        if (st.mode === "teacher" && !c.to.teachers.includes(st.teacher)) return lessonItem(l, { ch: c, cs: "replaced", off: true });
+        const nl = changeLesson(c);
+        lessonItem(nl, { start: nl.start, end: nl.end, ch: c, cs: "changed" });
+      });
+      // дополнительные занятия и занятия, перенесённые на этот день
+      chIdx.extra.forEach((c) => {
+        const target = c.type === "add" ? c.date : c.to.date;
+        if (target !== ds) return;
+        let cs = null;
+        if (c.type === "add") cs = changeInView(c, c.teachers) && "added";
+        else if (isMove(c)) cs = changeInView(c, c.to.teachers) && "movedIn";
+        else if (st.mode === "teacher" && c.to.teachers.includes(st.teacher) && !c.teachers.includes(st.teacher)) cs = "changed";
+        if (!cs) return;
+        const nl = changeLesson(c);
+        list.push({ kind: "lesson", id: `${c.id}@${ds}`, start: nl.start, end: nl.end, l: nl, ds, ch: c, cs });
+      });
       if (withPersonal) prefs.personal.filter((p) => occurs(p, ds)).forEach((p) => list.push({ kind: "personal", id: `p${p.id}@${ds}`, start: p.start, end: p.end, p, ds }));
-      list.sort((a, b) => a.start.localeCompare(b.start) || a.end.localeCompare(b.end));
+      list.sort((a, b) => a.start.localeCompare(b.start) || a.end.localeCompare(b.end) || (a.off ? 1 : 0) - (b.off ? 1 : 0));
       list.forEach((it, i) => {
-        it.now = ds === today && toMin(it.start) <= nowMin && nowMin < toMin(it.end);
-        it.par = list.some((o, j) => j !== i && toMin(o.start) < toMin(it.end) && toMin(it.start) < toMin(o.end));
+        it.now = !it.off && ds === today && toMin(it.start) <= nowMin && nowMin < toMin(it.end);
+        it.par = !it.off && list.some((o, j) => j !== i && !o.off && toMin(o.start) < toMin(it.end) && toMin(it.start) < toMin(o.end));
         st.items[it.id] = it;
       });
       return { di, date, ds, today: ds === today, list };
@@ -212,8 +276,27 @@
       return gs.length <= 2 ? `${s}: ${gs.map((g) => trGroup(g.name)).join(", ")}` : `${s} · ${t("specialtiesN", gs.length)}`;
     }).join("; ");
   }
+  const CS_TAG = { cancel: ["tCancel", "off"], moved: ["tMoved", "off"], replaced: ["tReplaced", "off"], changed: ["tChanged", "chg"], movedIn: ["tMovedIn", "chg"], added: ["tAdded", "add"] };
+  // «перенесено на 5 окт, 10:00 · Болезнь преподавателя»
+  function changeLine(it) {
+    const c = it.ch;
+    if (!c) return "";
+    const parts = [];
+    if (it.cs === "moved") parts.push(t("movedTo", fmtDMShort(parseYmd(c.to.date)), c.to.start));
+    if (it.cs === "movedIn") parts.push(t("movedFrom", fmtDMShort(parseYmd(c.date)), c.start));
+    if (it.cs === "replaced") parts.push(t("replacedBy", c.to.teachers.join(", ")));
+    if (it.cs === "changed") {
+      const was = [];
+      if (c.to.teachers.join() !== c.teachers.join() && c.teachers.length) was.push(c.teachers.join(", "));
+      if (c.to.rooms.join() !== c.rooms.join() && c.rooms.length) was.push(c.rooms.map(trRoom).join(", "));
+      if (was.length) parts.push(t("insteadOf", was.join(", ")));
+    }
+    if (c.note) parts.push(trReason(c.note));
+    return parts.join(" · ");
+  }
   function tagsHTML(it) {
     const tags = [];
+    if (it.cs) tags.push(`<span class="tag ${CS_TAG[it.cs][1]}">${esc(t(CS_TAG[it.cs][0]))}</span>`);
     if (it.now) tags.push(`<span class="tag now">${esc(t("now"))}</span>`);
     if (it.kind === "personal") tags.push(`<span class="tag personal">${esc(t("personal"))}</span>`);
     if (it.par) tags.push(`<span class="tag par" title="${esc(t("parallelHint"))}">${esc(t("parallel"))}</span>`);
@@ -440,10 +523,11 @@
       });
       clusters.forEach((cl) => {
         html += `<div class="slot" style="grid-column:${c + 2};grid-row:${cl.rs + 2} / ${cl.re + 2}">` +
-          cl.items.map((it) => `<button type="button" class="card k-${it.kind}${it.now ? " now" : ""}" data-item="${it.id}">
+          cl.items.map((it) => `<button type="button" class="card k-${it.kind}${it.now ? " now" : ""}${it.cs ? " cs-" + CS_TAG[it.cs][1] : ""}" data-item="${it.id}">
               <span class="c-time">${it.start}–${it.end}</span>
               <span class="c-title">${esc(itemTitle(it))}</span>
               ${itemMeta(it, false) ? `<span class="c-meta">${itemMeta(it, false)}</span>` : ""}
+              ${it.ch && changeLine(it) ? `<span class="c-chg">${esc(changeLine(it))}</span>` : ""}
               ${st.mode === "teacher" && it.kind === "lesson" ? `<span class="c-groups">${esc(groupsBrief(it.l.groups))}</span>` : ""}
               ${tagsHTML(it)}
             </button>`).join("") + `</div>`;
@@ -460,11 +544,12 @@
       return `<section class="fday${d.today ? " today" : ""}" id="d-${d.di}">
         <header><h3>${esc(dayName(d.di))}<small>${esc(fmtDM(d.date))}${rel ? " · " + esc(rel) : ""}</small></h3>
           ${isMine() ? `<button type="button" class="add" data-add="${d.ds}" aria-label="${esc(t("addPersonal"))}">${ICON.plus}</button>` : ""}</header>
-        ${d.list.length ? `<ol class="tl">${d.list.map((it) => `<li class="ev k-${it.kind}${it.now ? " now" : ""}" data-item="${it.id}" tabindex="0">
+        ${d.list.length ? `<ol class="tl">${d.list.map((it) => `<li class="ev k-${it.kind}${it.now ? " now" : ""}${it.cs ? " cs-" + CS_TAG[it.cs][1] : ""}" data-item="${it.id}" tabindex="0">
             <div class="ev-time"><b>${it.start}</b><span>${it.end}</span></div>
             <div class="ev-rail"></div>
             <div><div class="ev-title">${esc(itemTitle(it))}</div>
               ${itemMeta(it, true) ? `<div class="ev-meta">${itemMeta(it, true)}</div>` : ""}
+              ${it.ch && changeLine(it) ? `<div class="ev-chg">${esc(changeLine(it))}</div>` : ""}
               ${it.kind === "lesson" && it.l.exact.length > 1 ? `<span class="alt">${esc(it.l.exact.join(", "))}</span>` : ""}
               ${st.mode === "teacher" && it.kind === "lesson" ? `<div class="ev-groups">${esc(groupsBrief(it.l.groups))}</div>` : ""}
               ${tagsHTML(it)}</div>
@@ -490,18 +575,26 @@
         <button type="button" class="btn icon-btn ghost" data-close aria-label="${esc(t("close"))}">${ICON.x}</button></div>
       <div class="dlg-body">
         ${tagsHTML(it)}
+        ${it.ch ? changeBox(it) : ""}
         <dl class="kv">
           <dt>${esc(t("time"))}</dt><dd>${esc(dayName(it.ds ? (d.getDay() + 6) % 7 : l.day))}, ${esc(fmtDM(d))} · <b>${l.start}–${l.end}</b>${l.exact.length > 1 ? `<br><span style="color:var(--muted)">${esc(l.exact.join(", "))}</span>` : ""}</dd>
           ${l.teachers.length ? `<dt>${esc(t("teachers"))}</dt><dd>${l.teachers.map((x) => `<button type="button" class="link" data-t="${esc(x)}">${esc(x)}</button>`).join(", ")}</dd>` : ""}
           ${l.rooms.length ? `<dt>${esc(t("room"))}</dt><dd>${esc(l.rooms.map(trRoom).join(", "))}</dd>` : ""}
           <dt>${esc(t("groups"))}</dt><dd style="display:grid;gap:4px">${groupsHtml}</dd>
         </dl>
-        <div class="raw">«${esc(l.text)}»<br>${srcLinks}</div>
+        ${l.text ? `<div class="raw">«${esc(l.text)}»<br>${srcLinks}</div>` : ""}
       </div></div>`;
     $("[data-close]", dlg).onclick = () => dlg.close();
+    $$("[data-notice]", dlg).forEach((b) => (b.onclick = () => openNotices(b.dataset.notice)));
     $$("[data-t]", dlg).forEach((b) => (b.onclick = () => { dlg.close(); st.mode = "teacher"; st.teacher = b.dataset.t; st.ctlOpen = false; update(); scrollTop(); }));
     $$("[data-g]", dlg).forEach((b) => (b.onclick = () => { dlg.close(); const g = idx.group[b.dataset.g]; st.mode = "group"; st.groupId = g.id; st.sourceId = g.source; st.ctlOpen = false; update(); scrollTop(); }));
     showDialog(dlg);
+  }
+  function changeBox(it) {
+    const c = it.ch, n = c.notice && feed.notices.find((x) => x.id === c.notice);
+    const line = changeLine(it);
+    return `<div class="chg-box ${CS_TAG[it.cs][1]}"><b>${esc(t("changeTitle"))}</b>${line ? `<span>${esc(line)}</span>` : ""}
+      ${n ? `<button type="button" class="link" data-notice="${esc(n.id)}">${ICON.bell}${esc(noticeText(n).title)}</button>` : ""}</div>`;
   }
   const scrollTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
   function showDialog(dlg) {
@@ -581,6 +674,172 @@
   }
   const refreshListDialog = () => { if ($("#dlg-list").open) openList(); };
 
+  // ------------------------------------------------------------ объявления учебного отдела
+  const noticeText = (n) => (L() === "zh" && n.title_zh ? { title: n.title_zh, body: n.body_zh || n.body } : { title: n.title, body: n.body });
+  const fmtTime = (iso) => { const d = new Date(iso); return `${fmtDM(d)}, ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+  // объявления показываем для своей группы, а если она не выбрана — для открытой сейчас
+  function noticeKeys() {
+    if (prefs.myGroup && idx.groupByKey[prefs.myGroup]) return [prefs.myGroup];
+    return st.mode === "group" && st.groupId ? [idx.group[st.groupId].key] : [];
+  }
+  function relevantNotices() {
+    const keys = noticeKeys();
+    return feed.notices.filter((n) => n.all || n.groups.some((k) => keys.includes(k)));
+  }
+  const RECENT_MS = 14 * 86400000;
+  const unreadNotices = () => relevantNotices().filter((n) => n.time > (prefs.noticeSeen || "") && Date.now() - new Date(n.time) < RECENT_MS);
+  function markNoticesRead() {
+    const top = relevantNotices()[0];
+    if (top && top.time > (prefs.noticeSeen || "")) { prefs.noticeSeen = top.time; savePrefs(); }
+  }
+
+  function renderAlerts() {
+    const box = $("#alerts");
+    const un = unreadNotices();
+    const parts = [];
+    if (un.length) {
+      const n = un[0], tx = noticeText(n);
+      parts.push(`<div class="alert"><div class="ph">${ICON.alert}</div>
+        <button type="button" class="grow" data-open="${esc(n.id)}"><b>${esc(tx.title)}</b><span>${esc(tx.body)}</span>
+          <small>${esc(fmtTime(n.time))}${un.length > 1 ? " · " + esc(t("moreNotices", un.length - 1)) : ""}</small></button>
+        <button type="button" class="btn icon-btn ghost" data-read aria-label="${esc(t("close"))}">${ICON.x}</button></div>`);
+    }
+    if (pushOffer()) {
+      parts.push(`<div class="banner"><div class="ph">${ICON.bell}</div>
+        <div class="grow"><b>${esc(t("pushBanner"))}</b><span>${esc(t("pushBannerText"))}</span></div>
+        <button type="button" class="btn primary" data-push>${esc(t("appNotifyAllow"))}</button>
+        <button type="button" class="btn icon-btn ghost" data-hide aria-label="${esc(t("close"))}">${ICON.x}</button></div>`);
+    }
+    box.innerHTML = parts.join("");
+    $$("[data-open]", box).forEach((b) => (b.onclick = () => openNotices(b.dataset.open)));
+    $$("[data-read]", box).forEach((b) => (b.onclick = () => { markNoticesRead(); renderAlerts(); }));
+    $$("[data-push]", box).forEach((b) => (b.onclick = enableNotifications));
+    $$("[data-hide]", box).forEach((b) => (b.onclick = () => { prefs.pushBannerClosed = true; savePrefs(); renderAlerts(); }));
+    $("#btn-notices").hidden = !(feedOk || feed.notices.length);
+    $("#notice-count").hidden = !un.length;
+    $("#notice-count").textContent = un.length;
+  }
+
+  function openNotices(focusId) {
+    const dlg = $("#dlg-notices");
+    const keys = noticeKeys();
+    const list = relevantNotices();
+    if (focusId && !list.some((n) => n.id === focusId)) { const n = feed.notices.find((x) => x.id === focusId); if (n) list.unshift(n); }
+    const g = keys[0] && idx.groupByKey[keys[0]];
+    const scope = g ? `<p class="note-muted">${esc(t("noticesFor", `${trGroup(g.name)} · ${shortSource(idx.source[g.source])}`))}</p>`
+      : `<p class="note-muted">${esc(t("noticesNoGroup"))}</p>`;
+    dlg.innerHTML = `<div class="dlg">
+      <div class="dlg-head"><h3>${esc(t("notices"))}</h3><button type="button" class="btn icon-btn ghost" data-close aria-label="${esc(t("close"))}">${ICON.x}</button></div>
+      <div class="dlg-body">
+        ${pushBoxHTML()}
+        ${scope}
+        ${list.length ? `<ul class="nlist">${list.map((n) => {
+          const tx = noticeText(n);
+          return `<li id="n-${esc(n.id)}" class="${n.id === focusId ? "focus" : ""}">
+            <div class="n-head"><b>${esc(tx.title)}</b><time>${esc(fmtTime(n.time))}</time></div>
+            <p>${esc(tx.body)}</p>
+            <div class="n-foot"><span>${esc(n.all ? t("noticesAll") : t("fromDept"))}</span>
+              ${n.changes && n.changes.length ? `<button type="button" class="link" data-go="${esc(n.id)}">${esc(t("showInSchedule"))}</button>` : ""}</div>
+          </li>`;
+        }).join("")}</ul>` : g ? `<p class="fnone">${esc(t("noticesEmpty"))}</p>` : ""}
+      </div></div>`;
+    $("[data-close]", dlg).onclick = () => dlg.close();
+    bindPushBox(dlg);
+    $$("[data-go]", dlg).forEach((b) => (b.onclick = () => { dlg.close(); showNoticeInSchedule(b.dataset.go); }));
+    showDialog(dlg);
+    if (focusId) requestAnimationFrame(() => document.getElementById("n-" + focusId)?.scrollIntoView({ block: "nearest" }));
+    markNoticesRead();
+    renderAlerts();
+  }
+
+  // переход к неделе первого изменения из объявления
+  function showNoticeInSchedule(id) {
+    const n = feed.notices.find((x) => x.id === id);
+    const cs = (n?.changes || []).map((cid) => feed.changes.find((c) => c.id === cid)).filter(Boolean);
+    if (!cs.length) return;
+    const dates = cs.map((c) => (c.type === "change" ? [c.date, c.to.date] : [c.date])).flat().sort();
+    const key = cs[0].groups.includes(prefs.myGroup) ? prefs.myGroup : cs[0].groups.find((k) => idx.groupByKey[k]);
+    if (key && selectGroupKey(key)) st.mode = "group";
+    const target = parseYmd(dates.find((d) => d >= ymd(new Date())) || dates[0]);
+    st.week = Math.floor(Math.round((target - calendarMonday()) / 86400000) / 7);
+    st.ctlOpen = DESKTOP.matches;
+    update();
+    requestAnimationFrame(() => document.getElementById("d-" + ((target.getDay() + 6) % 7))?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }
+
+  // ------------------------------------------------------------ уведомления на устройство
+  // Своего сервера нет, поэтому уведомления показывает только приложение для Android:
+  // оно само раз в 15–30 минут заглядывает в ленту изменений. Сайт лишь просит разрешение.
+  function appNotify() {
+    try { return window.Android.notifyState ? window.Android.notifyState() : "none"; } catch { return "none"; }
+  }
+  const IS_ANDROID = /Android/i.test(navigator.userAgent);
+  function pushState() {
+    if (inApp()) return "app-" + appNotify();
+    return IS_ANDROID && apkAvailable ? "android-web" : "none";
+  }
+  const pushOffer = () => feedOk && !!prefs.myGroup && !prefs.pushBannerClosed && pushState() === "app-ask";
+
+  function pushBoxHTML() {
+    const s = pushState();
+    if (!feedOk || s === "none" || s === "app-none") return "";
+    const row = (text, btn, cls = "") => `<div class="push-box ${cls}"><div class="ph">${ICON.bell}</div><div class="grow"><b>${esc(t("pushTitle"))}</b><span>${esc(text)}</span></div>${btn || ""}</div>`;
+    const b = (act, label, primary) => `<button type="button" class="btn${primary ? " primary" : ""}" data-pb="${act}">${esc(label)}</button>`;
+    switch (s) {
+      case "app-on": return row(prefs.myGroup ? t("appNotifyOn") : t("pushNeedGroup"), "", prefs.myGroup ? "on" : "");
+      case "app-ask": return row(t("appNotifyAsk"), b("on", t("appNotifyAllow"), true));
+      case "app-blocked": return row(t("appNotifyBlocked"), b("settings", t("appNotifySettings")));
+      default: return row(t("pushAndroidWeb"), `<a class="btn primary" href="app/raspisanie.apk" download>${esc(t("download"))}</a>`);
+    }
+  }
+  function bindPushBox(root) {
+    $$("[data-pb]", root).forEach((b) => (b.onclick = () => {
+      if (b.dataset.pb === "on") enableNotifications();
+      else if (b.dataset.pb === "settings") { try { window.Android.openNotifySettings(); } catch { /* старое приложение */ } }
+    }));
+  }
+  function refreshNoticeUI() {
+    renderAlerts();
+    const dlg = $("#dlg-notices");
+    if (dlg.open) { const box = $(".push-box", dlg); if (box) { box.outerHTML = pushBoxHTML() || "<div></div>"; bindPushBox(dlg); } }
+  }
+  window.onAndroidNotify = refreshNoticeUI; // приложение сообщает, что пользователь ответил на запрос разрешения
+
+  function enableNotifications() {
+    if (!prefs.myGroup) return toast(t("pushNeedGroup"), 5000);
+    try { window.Android.requestNotify(); } catch { /* старое приложение */ }
+  }
+
+  // лента изменений: сначала сохранённая копия, затем свежая с сайта
+  function loadFeedCache() {
+    try { const f = JSON.parse(localStorage.getItem(FEED_LS)); if (f && Array.isArray(f.changes)) setFeed(f); } catch { /* нет копии */ }
+  }
+  let feedFetched = 0;
+  async function fetchFeed() {
+    let j;
+    feedFetched = Date.now();
+    try {
+      const r = await fetch(FEED_URL, { cache: "no-cache" });
+      if (!r.ok) return false;
+      j = await r.json();
+      if (!j || !Array.isArray(j.changes) || !Array.isArray(j.notices)) return false;
+    } catch { return false; }
+    const first = !feedOk;
+    feedOk = true;
+    const changed = j.rev !== feed.rev || JSON.stringify(j) !== localStorage.getItem(FEED_LS);
+    if (changed) {
+      setFeed(j);
+      try { localStorage.setItem(FEED_LS, JSON.stringify(j)); } catch { /* недоступно */ }
+    }
+    // приложение для Android не будет присылать уведомления о том, что уже видно на экране
+    if (inApp()) { try { window.Android.feedSeen(JSON.stringify(j)); } catch { /* старое приложение */ } }
+    if (first || changed) {
+      if (!document.querySelector("dialog[open]")) renderSchedule();
+      renderAlerts();
+    }
+    return true;
+  }
+
   // ------------------------------------------------------------ приложения: Android и iPhone
   let installEvt = null;
   let apkAvailable = false;
@@ -643,8 +902,10 @@
     return {
       site: new URL(".", location.href).href,
       dataUrl: new URL("data/schedule.json", location.href).href,
+      feedUrl: new URL(FEED_URL, location.href).href,
       groupKey: g ? g.key : null,
       groupTitle: g ? `${trGroup(g.name)} · ${shortSource(idx.source[g.source])}` : "",
+      notifyGroup: prefs.myGroup && idx.groupByKey[prefs.myGroup] ? prefs.myGroup : null,
       lang: L(),
       personal: prefs.personal,
       tr,
@@ -741,7 +1002,7 @@
     b.disabled = true; b.classList.add("spin");
     toast(t("refreshStart"), 0);
     try {
-      const r = await fetch("api/refresh", { method: "POST" });
+      const r = await fetch("api/refresh", { method: "POST", headers: { "X-Rasp": "1" } });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || r.statusText);
       const gk = st.groupId && idx.group[st.groupId].key;
@@ -764,9 +1025,11 @@
       $("#schedule").innerHTML = `<div class="loading">${esc(t("noData"))}</div>`;
       return;
     }
+    loadFeedCache();
     restoreSelection();
     $$(".langs button").forEach((b) => (b.onclick = () => { prefs.lang = b.dataset.lang; savePrefs(); update(); }));
     $("#btn-personal").onclick = openList;
+    $("#btn-notices").onclick = () => openNotices();
     $("#btn-refresh").onclick = localRefresh;
     DESKTOP.addEventListener("change", () => { st.ctlOpen = DESKTOP.matches || st.ctlOpen; renderControls(); renderAll(); });
     window.addEventListener("hashchange", () => {
@@ -787,12 +1050,17 @@
       if (key !== lastNow) { lastNow = key; if (!document.querySelector("dialog[open]")) renderSchedule(); }
     }, 60000);
 
-    // локальный сервер умеет обновлять данные с сайта
+    // изменения от учебного отдела: при открытии, раз в 5 минут и при возвращении на страницу
+    renderAlerts();
+    fetchFeed();
+    setInterval(() => { if (document.visibilityState === "visible") fetchFeed(); }, 5 * 60000);
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && Date.now() - feedFetched > 60000) fetchFeed(); });
+    // программа на своём компьютере (app.py) умеет обновлять данные с сайта и открывает панель учебного отдела
     if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
-      fetch("api/status").then((r) => r.ok && r.json()).then((j) => { if (j && j.local) $("#btn-refresh").hidden = false; }).catch(() => {});
+      fetch("api/status").then((r) => r.ok && r.json()).then((j) => { if (j && j.local) { $("#btn-refresh").hidden = false; $("#btn-admin").hidden = !j.admin; } }).catch(() => {});
     }
     // APK для Android публикуется рядом с сайтом
-    fetch("app/raspisanie.apk", { method: "HEAD" }).then((r) => { apkAvailable = r.ok && !/html/.test(r.headers.get("content-type") || ""); renderFoot(); }).catch(() => {});
+    fetch("app/raspisanie.apk", { method: "HEAD" }).then((r) => { apkAvailable = r.ok && !/html/.test(r.headers.get("content-type") || ""); renderFoot(); refreshNoticeUI(); }).catch(() => {});
   }
 
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; if (D) renderFoot(); });

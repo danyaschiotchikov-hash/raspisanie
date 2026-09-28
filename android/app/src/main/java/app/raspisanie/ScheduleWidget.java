@@ -21,6 +21,7 @@ public class ScheduleWidget extends AppWidgetProvider {
 
     @Override
     public void onUpdate(Context c, AppWidgetManager m, int[] ids) {
+        FeedJob.schedule(c); // проверка изменений в расписании, даже если приложение давно не открывали
         for (int id : ids) m.updateAppWidget(id, build(c, id));
         m.notifyAppWidgetViewDataChanged(ids, R.id.list);
     }

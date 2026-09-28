@@ -21,9 +21,12 @@ import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-/** Данные для виджета: скачивает расписание с сайта (с кэшем) и собирает строки на сегодня или на неделю. */
+/** Данные для виджета: скачивает расписание с сайта (с кэшем), учитывает изменения учебного отдела
+ *  и собирает строки на сегодня или на неделю. */
 final class ScheduleData {
     static final String PREFS = "raspisanie";
     private static final long MAX_AGE_MS = 3L * 60 * 60 * 1000;
@@ -33,8 +36,11 @@ final class ScheduleData {
     private static final String[] MONTHS_RU = {"января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа",
             "сентября", "октября", "ноября", "декабря"};
 
+    static final int NORMAL = 0, OFF = 1, CHANGED = 2, ADDED = 3;
+
     static final class Row {
         boolean header;
+        int status = NORMAL; // изменение учебного отдела: отменено или перенесено / заменено / доп. занятие
         String text;
         String start = "";
         String end = "";
@@ -120,6 +126,25 @@ final class ScheduleData {
         }
         JSONArray personal = cfg.optJSONArray("personal");
 
+        // изменения учебного отдела для этой группы: по занятию и дате, плюс перенесённые сюда и доп. занятия
+        SharedPreferences sp = prefs(c);
+        JSONObject feed = FeedCheck.load(c, sp.getLong("force", 0) > sp.getLong("feedChecked", 0));
+        String key = cfg.optString("groupKey");
+        Map<String, JSONObject> occ = new HashMap<>();
+        List<JSONObject> extra = new ArrayList<>();
+        JSONArray changes = feed == null ? null : feed.optJSONArray("changes");
+        for (int i = 0; changes != null && i < changes.length(); i++) {
+            JSONObject ch = changes.optJSONObject(i);
+            if (ch == null || !FeedCheck.has(ch.optJSONArray("groups"), key)) continue;
+            JSONObject to = ch.optJSONObject("to");
+            if ("add".equals(ch.optString("type"))) {
+                extra.add(ch);
+                continue;
+            }
+            occ.put(ch.optString("lesson") + "@" + ch.optString("date"), ch);
+            if (to != null && FeedCheck.moved(ch, to)) extra.add(ch);
+        }
+
         boolean week = weekMode(c);
         LocalDate today = LocalDate.now();
         LocalTime nowT = LocalTime.now();
@@ -128,19 +153,40 @@ final class ScheduleData {
             int dow = d.getDayOfWeek().getValue() - 1;
             List<Row> items = new ArrayList<>();
 
+            String ds = d.toString();
             for (JSONObject l : lessons) {
                 if (l.optInt("day", -1) != dow) continue;
-                Row r = new Row();
-                r.start = l.optString("start");
-                r.end = l.optString("end");
-                String subject = l.optString("subject");
-                r.title = zh ? tr.optString(subject, subject) : subject;
-                List<String> meta = new ArrayList<>();
-                String teachers = join(l.optJSONArray("teachers"), null);
-                if (!teachers.isEmpty()) meta.add(teachers);
-                String rooms = join(l.optJSONArray("rooms"), zh ? tr : null);
-                if (!rooms.isEmpty()) meta.add(rooms);
-                r.meta = String.join(" · ", meta);
+                Row r = lessonRow(l.optString("subject"), l.optString("start"), l.optString("end"),
+                        l.optJSONArray("teachers"), l.optJSONArray("rooms"), zh, tr);
+                JSONObject ch = occ.get(l.optString("key") + "@" + ds);
+                if (ch != null) {
+                    JSONObject to = ch.optJSONObject("to");
+                    if ("cancel".equals(ch.optString("type"))) {
+                        r.status = OFF;
+                        r.meta = withNote(zh ? "已取消" : "Отменено", ch, zh);
+                    } else if (to != null && FeedCheck.moved(ch, to)) {
+                        r.status = OFF;
+                        r.meta = withNote((zh ? "已调至 " : "Перенесено на ")
+                                + FeedCheck.when(to.optString("date"), to.optString("start"), zh), ch, zh);
+                    } else if (to != null) {
+                        Row n = lessonRow(l.optString("subject"), r.start, r.end,
+                                to.optJSONArray("teachers"), to.optJSONArray("rooms"), zh, tr);
+                        r.status = CHANGED;
+                        r.meta = withNote((zh ? "变更" : "Изменение") + (n.meta.isEmpty() ? "" : " · " + n.meta), ch, zh);
+                    }
+                }
+                items.add(r);
+            }
+            for (JSONObject ch : extra) {
+                boolean add = "add".equals(ch.optString("type"));
+                JSONObject src = add ? ch : ch.optJSONObject("to");
+                if (src == null || !ds.equals(src.optString("date"))) continue;
+                Row r = lessonRow(ch.optString("subject"), src.optString("start"), src.optString("end"),
+                        src.optJSONArray("teachers"), src.optJSONArray("rooms"), zh, tr);
+                r.status = add ? ADDED : CHANGED;
+                String label = add ? (zh ? "加课" : "Доп. занятие")
+                        : (zh ? "调课，原 " : "Перенос с ") + FeedCheck.when(ch.optString("date"), ch.optString("start"), zh);
+                r.meta = withNote(label + (r.meta.isEmpty() ? "" : " · " + r.meta), ch, zh);
                 items.add(r);
             }
             if (personal != null) {
@@ -160,6 +206,7 @@ final class ScheduleData {
 
             if (k == 0) {
                 for (Row r : items) {
+                    if (r.status == OFF) continue;
                     LocalTime s = time(r.start), e = time(r.end);
                     if (s == null || e == null) continue;
                     r.now = !nowT.isBefore(s) && nowT.isBefore(e);
@@ -214,7 +261,28 @@ final class ScheduleData {
         }
     }
 
-    private static String join(JSONArray a, JSONObject tr) {
+    private static Row lessonRow(String subject, String start, String end, JSONArray teachers, JSONArray rooms,
+                                 boolean zh, JSONObject tr) {
+        Row r = new Row();
+        r.start = start;
+        r.end = end;
+        r.title = zh ? tr.optString(subject, subject) : subject;
+        List<String> meta = new ArrayList<>();
+        String t = join(teachers, null);
+        if (!t.isEmpty()) meta.add(t);
+        String rm = join(rooms, zh ? tr : null);
+        if (!rm.isEmpty()) meta.add(rm);
+        r.meta = String.join(" · ", meta);
+        return r;
+    }
+
+    /** Причина изменения после подписи: «Отменено · Болезнь преподавателя». */
+    private static String withNote(String text, JSONObject ch, boolean zh) {
+        String note = ch.optString("note", "");
+        return note.isEmpty() ? text : text + " · " + (zh ? FeedCheck.reasonZh(note) : note);
+    }
+
+    static String join(JSONArray a, JSONObject tr) {
         if (a == null) return "";
         List<String> out = new ArrayList<>();
         for (int i = 0; i < a.length(); i++) {
@@ -270,7 +338,7 @@ final class ScheduleData {
         }
     }
 
-    private static byte[] readAll(InputStream in) throws IOException {
+    static byte[] readAll(InputStream in) throws IOException {
         ByteArrayOutputStream buf = new ByteArrayOutputStream();
         byte[] chunk = new byte[16384];
         int n;

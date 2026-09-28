@@ -12,6 +12,10 @@
     <color name="w_accent">#FFF0A3AD</color>
     <color name="w_personal">#FF7ED3DA</color>
     <color name="w_now">#FF7EDCA9</color>
+    <!-- изменения учебного отдела: отмена, перенос или замена, доп. занятие -->
+    <color name="w_off">#FFFF8A80</color>
+    <color name="w_chg">#FFE7BF6A</color>
+    <color name="w_add">#FF8AB4F8</color>
     <color name="w_divider">#FF2D2A27</color>
     <color name="status">#FF121110</color>
     <color name="window">#FF121110</color>
