@@ -1,5 +1,127 @@
 {
- "rev": 12,
- "changes": [],
- "notices": []
+ "rev": 13,
+ "changes": [
+  {
+   "id": "c7ec6851a0d",
+   "type": "cancel",
+   "lesson": "ffb4833ad5",
+   "date": "2026-10-03",
+   "start": "13:00",
+   "end": "14:30",
+   "subject": "Педагогическая практика (лекции)",
+   "teachers": [
+    "Анцева В.П."
+   ],
+   "rooms": [
+    "Каб. 7"
+   ],
+   "groups": [
+    "5_kurs_rf_1_semestr_2026-2027.pdf#Фортепиано (спец)",
+    "5_kurs_rf_1_semestr_2026-2027.pdf#Струнные (спец)",
+    "5_kurs_rf_1_semestr_2026-2027.pdf#Народные (спец)",
+    "5_kurs_rf_1_semestr_2026-2027.pdf#Худ. руководство академическим хором (спец)",
+    "5_kurs_rf_1_semestr_2026-2027.pdf#Композиция (спец)",
+    "5_kurs_rf_1_semestr_2026-2027.pdf#Музыковедение (спец)"
+   ],
+   "note": "Концерт или мероприятие",
+   "created": "2026-09-28T23:30:03+03:00",
+   "notice": "nf8ab322c99"
+  },
+  {
+   "id": "c3c53dec8ce",
+   "type": "cancel",
+   "lesson": "d09965bb15",
+   "date": "2026-10-03",
+   "start": "14:45",
+   "end": "16:15",
+   "subject": "Муз.педагогика и психология",
+   "teachers": [
+    "Анцева В.П."
+   ],
+   "rooms": [
+    "Каб. 7"
+   ],
+   "groups": [
+    "2_kurs_knr_1_semestr_2026-2027.pdf#Фортепиано (бак)",
+    "2_kurs_knr_1_semestr_2026-2027.pdf#Фортепиано (спец)",
+    "2_kurs_knr_1_semestr_2026-2027.pdf#Духовые (спец)",
+    "2_kurs_knr_1_semestr_2026-2027.pdf#Вокал (бак)"
+   ],
+   "note": "Концерт или мероприятие",
+   "created": "2026-09-28T23:30:03+03:00",
+   "notice": "nf8ab322c99"
+  },
+  {
+   "id": "c7e392676cc",
+   "type": "cancel",
+   "lesson": "634815ad1d",
+   "date": "2026-10-03",
+   "start": "16:45",
+   "end": "18:15",
+   "subject": "Педагогическая практика (лекции)",
+   "teachers": [
+    "Анцева В.П."
+   ],
+   "rooms": [
+    "Каб. 7"
+   ],
+   "groups": [
+    "5_kurs_rf_1_semestr_2026-2027.pdf#Духовые (спец)",
+    "mag_1_kurs_rf_1_semestr_2026-2027.pdf#Фортепиано",
+    "mag_1_kurs_rf_1_semestr_2026-2027.pdf#Духовые",
+    "mag_1_kurs_rf_1_semestr_2026-2027.pdf#Народные",
+    "mag_1_kurs_rf_1_semestr_2026-2027.pdf#Вокал",
+    "mag_1_kurs_rf_1_semestr_2026-2027.pdf#Дирижирование академическим хором",
+    "mag_1_kurs_rf_1_semestr_2026-2027.pdf#Музыкальная педагогика",
+    "mag_2_kurs_rf_1_semestr_2026-2027.pdf#Музыковедение",
+    "mag_1_kurs_knr_1_semestr_2026-2027.pdf#Фортепиано",
+    "mag_1_kurs_knr_1_semestr_2026-2027.pdf#Духовые",
+    "mag_1_kurs_knr_1_semestr_2026-2027.pdf#Струнные",
+    "mag_1_kurs_knr_1_semestr_2026-2027.pdf#Народные"
+   ],
+   "note": "Концерт или мероприятие",
+   "created": "2026-09-28T23:30:03+03:00",
+   "notice": "nf8ab322c99"
+  }
+ ],
+ "notices": [
+  {
+   "id": "nf8ab322c99",
+   "time": "2026-09-28T23:30:03+03:00",
+   "title": "Изменения в расписании",
+   "body": "в связи с концертом = лафа",
+   "title_zh": "课表变更",
+   "body_zh": "教学实践（讲座），10月3日（星期六） 13:00–14:30：停课。原因：音乐会或活动。\n音乐教育学与心理学，10月3日（星期六） 14:45–16:15：停课。原因：音乐会或活动。\n教学实践（讲座），10月3日（星期六） 16:45–18:15：停课。原因：音乐会或活动。",
+   "groups": [
+    "5_kurs_rf_1_semestr_2026-2027.pdf#Фортепиано (спец)",
+    "5_kurs_rf_1_semestr_2026-2027.pdf#Струнные (спец)",
+    "5_kurs_rf_1_semestr_2026-2027.pdf#Народные (спец)",
+    "5_kurs_rf_1_semestr_2026-2027.pdf#Худ. руководство академическим хором (спец)",
+    "5_kurs_rf_1_semestr_2026-2027.pdf#Композиция (спец)",
+    "5_kurs_rf_1_semestr_2026-2027.pdf#Музыковедение (спец)",
+    "2_kurs_knr_1_semestr_2026-2027.pdf#Фортепиано (бак)",
+    "2_kurs_knr_1_semestr_2026-2027.pdf#Фортепиано (спец)",
+    "2_kurs_knr_1_semestr_2026-2027.pdf#Духовые (спец)",
+    "2_kurs_knr_1_semestr_2026-2027.pdf#Вокал (бак)",
+    "5_kurs_rf_1_semestr_2026-2027.pdf#Духовые (спец)",
+    "mag_1_kurs_rf_1_semestr_2026-2027.pdf#Фортепиано",
+    "mag_1_kurs_rf_1_semestr_2026-2027.pdf#Духовые",
+    "mag_1_kurs_rf_1_semestr_2026-2027.pdf#Народные",
+    "mag_1_kurs_rf_1_semestr_2026-2027.pdf#Вокал",
+    "mag_1_kurs_rf_1_semestr_2026-2027.pdf#Дирижирование академическим хором",
+    "mag_1_kurs_rf_1_semestr_2026-2027.pdf#Музыкальная педагогика",
+    "mag_2_kurs_rf_1_semestr_2026-2027.pdf#Музыковедение",
+    "mag_1_kurs_knr_1_semestr_2026-2027.pdf#Фортепиано",
+    "mag_1_kurs_knr_1_semestr_2026-2027.pdf#Духовые",
+    "mag_1_kurs_knr_1_semestr_2026-2027.pdf#Струнные",
+    "mag_1_kurs_knr_1_semestr_2026-2027.pdf#Народные"
+   ],
+   "all": false,
+   "changes": [
+    "c7ec6851a0d",
+    "c3c53dec8ce",
+    "c7e392676cc"
+   ]
+  }
+ ]
 }
