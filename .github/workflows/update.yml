@@ -26,15 +26,17 @@ jobs:
         with:
           python-version: "3.12"
 
+      # правки учебного отдела (коммиты из его панели) публикуем сразу, без повторного скачивания PDF
       - name: Скачать расписание с glazunovcons.ru
         id: scrape
+        if: github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'Изменения в расписании:')
         continue-on-error: true
         run: |
           pip install -r requirements.txt
           python scraper.py --out site/data
 
       - name: Предупреждение, если сайт консерватории недоступен
-        if: steps.scrape.outcome != 'success'
+        if: steps.scrape.outcome == 'failure'
         run: echo "::warning::Не удалось скачать расписание с glazunovcons.ru — опубликованы прежние данные"
 
       - name: Сохранить данные, если расписание изменилось
@@ -104,6 +106,9 @@ jobs:
           grep -E "error:|e: |\.java:[0-9]+|What went wrong|Could not|FAILED|Exception" build.log | head -40 | while IFS= read -r line; do
             echo "::error::${line}"
           done
+
+      - name: Проверить изменения учебного отдела
+        run: python backend.py check site/data/feed.json
 
       - uses: actions/configure-pages@v5
 

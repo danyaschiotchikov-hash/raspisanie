@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Учебный отдел — изменения в расписании</title>
+<meta name="theme-color" content="#83409b">
+<link rel="icon" href="/icons/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/app.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<div class="app adm">
+  <header class="top">
+    <div class="brand">
+      <div class="mark" aria-hidden="true"><img src="/icons/emblem.svg" alt=""></div>
+      <div style="min-width:0">
+        <h1>Учебный отдел</h1>
+        <p>Изменения в расписании и объявления для студентов</p>
+      </div>
+    </div>
+    <div class="actions">
+      <a class="btn" id="site-link" href="/" target="_blank" rel="noopener">Открыть сайт ↗</a>
+    </div>
+  </header>
+
+  <div id="status"></div>
+  <nav class="seg tabs" role="tablist">
+    <button type="button" data-tab="edit" aria-pressed="true">Расписание</button>
+    <button type="button" data-tab="published" aria-pressed="false">Опубликовано <span class="badge" id="pub-count" hidden></span></button>
+  </nav>
+  <div class="adm-grid">
+    <main id="main"><div class="loading">Загрузка…</div></main>
+    <aside id="draft"></aside>
+  </div>
+</div>
+
+<datalist id="dl-teachers"></datalist>
+<datalist id="dl-rooms"></datalist>
+<datalist id="dl-subjects"></datalist>
+<dialog id="dlg"></dialog>
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script src="/i18n.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

@@ -113,12 +113,11 @@
   }
 
   // ------------------------------------------------------------ изменения и объявления учебного отдела
-  // Сервер изменений может жить по другому адресу, чем сайт: его задаёт config.js (window.RASP_API).
-  const API_BASE = String(window.RASP_API || "").trim().replace(/\/+$/, "");
-  const apiUrl = (p) => (API_BASE ? API_BASE + "/" : "") + "api/" + p;
+  // Лента — обычный файл рядом с расписанием: учебный отдел публикует его из своей панели через GitHub.
+  const FEED_URL = "data/feed.json";
   const FEED_LS = "rasp.feed";
   let feed = { rev: 0, changes: [], notices: [] };
-  let apiOk = false;
+  let feedOk = false;
   const chIdx = { occ: new Map(), extra: [] };
 
   function setFeed(f) {
@@ -708,7 +707,7 @@
     if (pushOffer()) {
       parts.push(`<div class="banner"><div class="ph">${ICON.bell}</div>
         <div class="grow"><b>${esc(t("pushBanner"))}</b><span>${esc(t("pushBannerText"))}</span></div>
-        <button type="button" class="btn primary" data-push>${esc(inApp() ? t("appNotifyAllow") : t("pushEnable"))}</button>
+        <button type="button" class="btn primary" data-push>${esc(t("appNotifyAllow"))}</button>
         <button type="button" class="btn icon-btn ghost" data-hide aria-label="${esc(t("close"))}">${ICON.x}</button></div>`);
     }
     box.innerHTML = parts.join("");
@@ -716,7 +715,7 @@
     $$("[data-read]", box).forEach((b) => (b.onclick = () => { markNoticesRead(); renderAlerts(); }));
     $$("[data-push]", box).forEach((b) => (b.onclick = enableNotifications));
     $$("[data-hide]", box).forEach((b) => (b.onclick = () => { prefs.pushBannerClosed = true; savePrefs(); renderAlerts(); }));
-    $("#btn-notices").hidden = !(apiOk || feed.notices.length);
+    $("#btn-notices").hidden = !(feedOk || feed.notices.length);
     $("#notice-count").hidden = !un.length;
     $("#notice-count").textContent = un.length;
   }
@@ -769,40 +768,33 @@
   }
 
   // ------------------------------------------------------------ уведомления на устройство
-  const PUSH_OK = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window
-    && (location.protocol === "https:" || /^(localhost|127\.0\.0\.1)$/.test(location.hostname));
-  // приложение для Android: уведомления показывает само приложение, сайт только спрашивает разрешение
+  // Своего сервера нет, поэтому уведомления показывает только приложение для Android:
+  // оно само раз в 15–30 минут заглядывает в ленту изменений. Сайт лишь просит разрешение.
   function appNotify() {
     try { return window.Android.notifyState ? window.Android.notifyState() : "none"; } catch { return "none"; }
   }
+  const IS_ANDROID = /Android/i.test(navigator.userAgent);
   function pushState() {
     if (inApp()) return "app-" + appNotify();
-    if (!PUSH_OK) return IS_IOS && !STANDALONE ? "ios" : "unsupported";
-    if (Notification.permission === "denied") return "denied";
-    return prefs.push && Notification.permission === "granted" ? "on" : "off";
+    return IS_ANDROID && apkAvailable ? "android-web" : "none";
   }
-  const pushOffer = () => apiOk && !!prefs.myGroup && !prefs.pushBannerClosed && ["off", "app-ask"].includes(pushState());
+  const pushOffer = () => feedOk && !!prefs.myGroup && !prefs.pushBannerClosed && pushState() === "app-ask";
 
   function pushBoxHTML() {
     const s = pushState();
-    if (!apiOk || s === "app-none") return "";
+    if (!feedOk || s === "none" || s === "app-none") return "";
     const row = (text, btn, cls = "") => `<div class="push-box ${cls}"><div class="ph">${ICON.bell}</div><div class="grow"><b>${esc(t("pushTitle"))}</b><span>${esc(text)}</span></div>${btn || ""}</div>`;
     const b = (act, label, primary) => `<button type="button" class="btn${primary ? " primary" : ""}" data-pb="${act}">${esc(label)}</button>`;
     switch (s) {
-      case "on": return row(t("pushOnText"), b("off", t("pushDisable")), "on");
-      case "off": return row(prefs.myGroup ? t("pushOffText") : t("pushNeedGroup"), prefs.myGroup ? b("on", t("pushEnable"), true) : "");
-      case "denied": return row(t("pushDenied"));
-      case "ios": return row(t("pushIos"));
-      case "app-on": return row(t("appNotifyOn"), "", "on");
+      case "app-on": return row(prefs.myGroup ? t("appNotifyOn") : t("pushNeedGroup"), "", prefs.myGroup ? "on" : "");
       case "app-ask": return row(t("appNotifyAsk"), b("on", t("appNotifyAllow"), true));
       case "app-blocked": return row(t("appNotifyBlocked"), b("settings", t("appNotifySettings")));
-      default: return row(t("pushUnsupported"));
+      default: return row(t("pushAndroidWeb"), `<a class="btn primary" href="app/raspisanie.apk" download>${esc(t("download"))}</a>`);
     }
   }
   function bindPushBox(root) {
     $$("[data-pb]", root).forEach((b) => (b.onclick = () => {
       if (b.dataset.pb === "on") enableNotifications();
-      else if (b.dataset.pb === "off") disablePush();
       else if (b.dataset.pb === "settings") { try { window.Android.openNotifySettings(); } catch { /* старое приложение */ } }
     }));
   }
@@ -813,96 +805,38 @@
   }
   window.onAndroidNotify = refreshNoticeUI; // приложение сообщает, что пользователь ответил на запрос разрешения
 
-  const b64u = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
-  const sameBytes = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
-  const pushSyncKey = (sub) => `${sub.endpoint}|${prefs.myGroup || ""}|${L()}`;
-
-  async function enableNotifications() {
-    if (inApp()) {
-      try { window.Android.requestNotify(); } catch { /* старое приложение */ }
-      return;
-    }
+  function enableNotifications() {
     if (!prefs.myGroup) return toast(t("pushNeedGroup"), 5000);
-    // Safari разрешает запрос только сразу после нажатия — спрашиваем до любых ожиданий
-    let perm;
-    try { perm = await Notification.requestPermission(); } catch { perm = Notification.permission; }
-    if (perm !== "granted") { refreshNoticeUI(); return toast(t("pushDenied"), 8000); }
-    try {
-      await subscribePush();
-      prefs.push = true; savePrefs();
-      toast(t("pushDone"));
-    } catch (e) {
-      toast(t("pushFail", e.message || e), 8000);
-    }
-    refreshNoticeUI();
-  }
-  async function subscribePush() {
-    const r = await fetch(apiUrl("push/key"), { cache: "no-store" }).catch(() => null);
-    const j = r && r.ok ? await r.json() : null;
-    if (!j || !j.key) throw new Error(t("pushNoServer"));
-    const reg = (await navigator.serviceWorker.getRegistration()) || (await navigator.serviceWorker.register("sw.js"));
-    await navigator.serviceWorker.ready;
-    const key = b64u(j.key);
-    let sub = await reg.pushManager.getSubscription();
-    if (sub && sub.options?.applicationServerKey && !sameBytes(new Uint8Array(sub.options.applicationServerKey), key)) { await sub.unsubscribe(); sub = null; }
-    sub ||= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
-    await sendSubscription(sub);
-  }
-  async function sendSubscription(sub) {
-    const r = await fetch(apiUrl("push/subscribe"), { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subscription: sub.toJSON(), groups: [prefs.myGroup].filter(Boolean), lang: L() }) });
-    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.status);
-    prefs.pushSynced = pushSyncKey(sub); savePrefs();
-  }
-  // сменили группу или язык — сообщаем серверу; подписка пропала — восстанавливаем
-  async function syncPush() {
-    if (!apiOk || pushState() !== "on") return;
-    try {
-      const reg = await navigator.serviceWorker.getRegistration();
-      const sub = reg && (await reg.pushManager.getSubscription());
-      if (!sub) await subscribePush();
-      else if (prefs.pushSynced !== pushSyncKey(sub)) await sendSubscription(sub);
-    } catch { /* повторим при следующем открытии */ }
-  }
-  async function disablePush() {
-    prefs.push = false; savePrefs();
-    try {
-      const reg = await navigator.serviceWorker.getRegistration();
-      const sub = reg && (await reg.pushManager.getSubscription());
-      if (sub) {
-        fetch(apiUrl("push/unsubscribe"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint: sub.endpoint }) }).catch(() => {});
-        await sub.unsubscribe();
-      }
-    } catch { /* уже отписаны */ }
-    toast(t("pushOffDone"));
-    refreshNoticeUI();
+    try { window.Android.requestNotify(); } catch { /* старое приложение */ }
   }
 
-  // лента изменений: сначала сохранённая копия, затем свежая с сервера
+  // лента изменений: сначала сохранённая копия, затем свежая с сайта
   function loadFeedCache() {
     try { const f = JSON.parse(localStorage.getItem(FEED_LS)); if (f && Array.isArray(f.changes)) setFeed(f); } catch { /* нет копии */ }
   }
+  let feedFetched = 0;
   async function fetchFeed() {
     let j;
+    feedFetched = Date.now();
     try {
-      const r = await fetch(apiUrl("feed"), { cache: "no-cache" });
-      if (!r.ok || !/json/.test(r.headers.get("content-type") || "")) return false;
+      const r = await fetch(FEED_URL, { cache: "no-cache" });
+      if (!r.ok) return false;
       j = await r.json();
+      if (!j || !Array.isArray(j.changes) || !Array.isArray(j.notices)) return false;
     } catch { return false; }
-    const first = !apiOk;
-    apiOk = true;
+    const first = !feedOk;
+    feedOk = true;
     const changed = j.rev !== feed.rev || JSON.stringify(j) !== localStorage.getItem(FEED_LS);
     if (changed) {
       setFeed(j);
       try { localStorage.setItem(FEED_LS, JSON.stringify(j)); } catch { /* недоступно */ }
     }
+    // приложение для Android не будет присылать уведомления о том, что уже видно на экране
+    if (inApp()) { try { window.Android.feedSeen(JSON.stringify(j)); } catch { /* старое приложение */ } }
     if (first || changed) {
       if (!document.querySelector("dialog[open]")) renderSchedule();
       renderAlerts();
-      renderFoot();
-      pushToAndroid();
     }
-    if (first) syncPush();
     return true;
   }
 
@@ -968,8 +902,10 @@
     return {
       site: new URL(".", location.href).href,
       dataUrl: new URL("data/schedule.json", location.href).href,
+      feedUrl: new URL(FEED_URL, location.href).href,
       groupKey: g ? g.key : null,
       groupTitle: g ? `${trGroup(g.name)} · ${shortSource(idx.source[g.source])}` : "",
+      notifyGroup: prefs.myGroup && idx.groupByKey[prefs.myGroup] ? prefs.myGroup : null,
       lang: L(),
       personal: prefs.personal,
       tr,
@@ -1066,7 +1002,7 @@
     b.disabled = true; b.classList.add("spin");
     toast(t("refreshStart"), 0);
     try {
-      const r = await fetch("api/refresh", { method: "POST" });
+      const r = await fetch("api/refresh", { method: "POST", headers: { "X-Rasp": "1" } });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error || r.statusText);
       const gk = st.groupId && idx.group[st.groupId].key;
@@ -1089,9 +1025,11 @@
       $("#schedule").innerHTML = `<div class="loading">${esc(t("noData"))}</div>`;
       return;
     }
+    loadFeedCache();
     restoreSelection();
     $$(".langs button").forEach((b) => (b.onclick = () => { prefs.lang = b.dataset.lang; savePrefs(); update(); }));
     $("#btn-personal").onclick = openList;
+    $("#btn-notices").onclick = () => openNotices();
     $("#btn-refresh").onclick = localRefresh;
     DESKTOP.addEventListener("change", () => { st.ctlOpen = DESKTOP.matches || st.ctlOpen; renderControls(); renderAll(); });
     window.addEventListener("hashchange", () => {
@@ -1112,12 +1050,17 @@
       if (key !== lastNow) { lastNow = key; if (!document.querySelector("dialog[open]")) renderSchedule(); }
     }, 60000);
 
-    // локальный сервер умеет обновлять данные с сайта
+    // изменения от учебного отдела: при открытии, раз в 5 минут и при возвращении на страницу
+    renderAlerts();
+    fetchFeed();
+    setInterval(() => { if (document.visibilityState === "visible") fetchFeed(); }, 5 * 60000);
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && Date.now() - feedFetched > 60000) fetchFeed(); });
+    // программа на своём компьютере (app.py) умеет обновлять данные с сайта и открывает панель учебного отдела
     if (/^(localhost|127\.0\.0\.1)$/.test(location.hostname)) {
-      fetch("api/status").then((r) => r.ok && r.json()).then((j) => { if (j && j.local) $("#btn-refresh").hidden = false; }).catch(() => {});
+      fetch("api/status").then((r) => r.ok && r.json()).then((j) => { if (j && j.local) { $("#btn-refresh").hidden = false; $("#btn-admin").hidden = !j.admin; } }).catch(() => {});
     }
     // APK для Android публикуется рядом с сайтом
-    fetch("app/raspisanie.apk", { method: "HEAD" }).then((r) => { apkAvailable = r.ok && !/html/.test(r.headers.get("content-type") || ""); renderFoot(); }).catch(() => {});
+    fetch("app/raspisanie.apk", { method: "HEAD" }).then((r) => { apkAvailable = r.ok && !/html/.test(r.headers.get("content-type") || ""); renderFoot(); refreshNoticeUI(); }).catch(() => {});
   }
 
   window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; if (D) renderFoot(); });

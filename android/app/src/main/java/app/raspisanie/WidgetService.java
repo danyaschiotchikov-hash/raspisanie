@@ -58,9 +58,12 @@ public class WidgetService extends RemoteViewsService {
             v.setTextViewText(R.id.item_title, r.title);
             v.setTextViewText(R.id.item_meta, r.meta);
             v.setViewVisibility(R.id.item_meta, r.meta == null || r.meta.isEmpty() ? View.GONE : View.VISIBLE);
-            int bar = c.getColor(r.now ? R.color.w_now : r.personal ? R.color.w_personal : R.color.w_accent);
+            int bar = c.getColor(r.status == ScheduleData.OFF ? R.color.w_off
+                    : r.status == ScheduleData.CHANGED ? R.color.w_chg
+                    : r.status == ScheduleData.ADDED ? R.color.w_add
+                    : r.now ? R.color.w_now : r.personal ? R.color.w_personal : R.color.w_accent);
             v.setInt(R.id.bar, "setBackgroundColor", bar);
-            int text = c.getColor(r.past ? R.color.w_past : R.color.w_text);
+            int text = c.getColor(r.past || r.status == ScheduleData.OFF ? R.color.w_past : R.color.w_text);
             v.setTextColor(R.id.item_title, text);
             v.setTextColor(R.id.start, text);
             v.setOnClickFillInIntent(R.id.item, new Intent());

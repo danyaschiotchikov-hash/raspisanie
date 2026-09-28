@@ -1,0 +1,94 @@
+/* Панель учебного отдела — поверх стилей сайта (app.css). */
+.adm .brand .mark img { display: block; width: 100%; height: 100%; }
+.adm .top .btn { text-decoration: none; color: var(--text); }
+.adm code { font: 13px ui-monospace, Consolas, monospace; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 1px 5px; }
+.muted { color: var(--muted); }
+.small { font-size: 12.5px; }
+.st { margin: 0 0 12px; }
+.warn-text { color: var(--off); font-weight: 600; }
+.pre { white-space: pre-line; }
+
+.tabs { margin: 0 0 14px; }
+.tabs .badge { margin-left: 4px; }
+.adm-grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 18px; align-items: start; }
+#draft { position: sticky; top: 12px; max-height: calc(100vh - 24px); overflow: auto; border-radius: var(--radius); }
+.box { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; margin-bottom: 16px; display: grid; gap: 12px; }
+.box h2 { margin: 0; font: 600 20px/1.2 var(--serif); }
+.box .note-muted { margin: 0; }
+.empty-box { margin-top: 14px; padding: 40px 20px; text-align: center; color: var(--muted); background: var(--surface); border: 1px dashed var(--line-strong); border-radius: var(--radius); }
+
+/* неделя */
+.adm-wb { position: static; margin: 12px 0 4px; padding: 0; background: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+.aday { margin-top: 16px; }
+.aday > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 4px 8px; flex-wrap: wrap; }
+.aday h3 { margin: 0; font: 600 19px/1.2 var(--serif); }
+.aday h3 small { font: 500 13.5px var(--sans); color: var(--faint); margin-left: 8px; }
+.aday.today h3, .aday.today h3 small { color: var(--accent); }
+.aday.past { opacity: .7; }
+.aday-act { display: flex; gap: 8px; }
+.arows { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.arow { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 11px 12px 11px 10px; border-top: 1px solid var(--line); border-left: 4px solid transparent; }
+.arow:first-child { border-top: 0; }
+.arow.off { border-left-color: var(--off); }
+.arow.chg { border-left-color: var(--par); }
+.arow.add { border-left-color: var(--add); }
+.arow.draft { background: repeating-linear-gradient(135deg, transparent 0 10px, color-mix(in srgb, var(--accent-soft) 60%, transparent) 10px 20px); }
+.arow.struck .r-title, .arow.struck .r-time b { text-decoration: line-through; color: var(--muted); }
+.r-time { font-variant-numeric: tabular-nums; text-align: right; line-height: 1.3; align-self: start; }
+.r-time b { display: block; font-size: 15px; }
+.r-time span { display: block; font-size: 12.5px; color: var(--faint); }
+.r-title { font-weight: 650; }
+.r-meta, .r-groups { font-size: 13.5px; color: var(--muted); }
+.r-state { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 5px; font-size: 13.5px; font-weight: 600; }
+.r-act { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.tag.draft { background: var(--accent-soft); color: var(--accent); }
+
+/* черновик */
+.dlist, .plist2 { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.dlist li { display: flex; gap: 8px; align-items: flex-start; justify-content: space-between; padding: 8px 6px 8px 10px; border-radius: 12px; background: var(--surface-2); border-left: 3px solid var(--line-strong); }
+.dlist li.off, .plist2 li.off { border-left-color: var(--off); }
+.dlist li.chg, .plist2 li.chg { border-left-color: var(--par); }
+.dlist li.add, .plist2 li.add { border-left-color: var(--add); }
+.dlist li > div { display: grid; gap: 2px; min-width: 0; font-size: 14px; }
+.dlist li > div > .tag { justify-self: start; }
+.dlist li span:not(.tag) { color: var(--muted); font-size: 13px; }
+.dlist .icon-btn { width: 30px; height: 30px; min-height: 30px; }
+.nbox { display: grid; gap: 10px; border-top: 1px solid var(--line); padding-top: 12px; }
+.nbox [data-nbody] { display: grid; gap: 10px; }
+.chk { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 14px; }
+.chk input { width: 17px; height: 17px; accent-color: var(--accent); margin: 0; flex: none; }
+.chk.big { font-weight: 650; font-size: 15px; }
+.recips { font-size: 14px; display: grid; gap: 4px; }
+.recip-act { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; font-size: 13.5px; }
+.zh summary { cursor: pointer; color: var(--muted); font-size: 13.5px; }
+.zh[open] { display: grid; gap: 10px; }
+.btn.big { min-height: 46px; font-size: 16px; font-weight: 650; width: 100%; }
+.danger-link { color: var(--off); justify-self: start; font-size: 13.5px; }
+
+/* опубликованное */
+.plist2 li { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 10px 10px 10px 12px; border-radius: 12px; background: var(--surface-2); border-left: 3px solid var(--line-strong); }
+.plist2 li > div { display: grid; gap: 3px; min-width: 0; font-size: 14px; }
+.plist2 li > .btn { flex: none; }
+.past-box summary { cursor: pointer; color: var(--muted); margin-bottom: 8px; }
+
+/* диалоги */
+#dlg { width: min(560px, calc(100% - 24px)); }
+.lcard { display: grid; gap: 2px; padding: 10px 12px; margin-bottom: 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); font-size: 14px; }
+.lcard b { font-size: 15.5px; }
+.seg.kind { margin-bottom: 14px; display: flex; }
+.seg.kind button { flex: 1; }
+.gpick { border: 0; padding: 0; margin: 0; display: grid; gap: 6px; }
+.gpick > span { margin-bottom: 2px; }
+.form .form { display: contents; }
+.form [hidden] { display: none !important; }
+
+@media (max-width: 1023px) {
+  .adm-grid { grid-template-columns: 1fr; }
+  #draft { position: static; max-height: none; }
+}
+@media (max-width: 640px) {
+  .arow { grid-template-columns: 48px minmax(0, 1fr); }
+  .r-act { grid-column: 1 / -1; justify-content: stretch; }
+  .r-act .btn { flex: 1; }
+  .plist2 li { flex-direction: column; align-items: stretch; }
+}
