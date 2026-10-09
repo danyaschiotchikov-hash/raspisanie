@@ -87,6 +87,13 @@ a.btn.primary { color: var(--accent-ink); }
 :root[data-theme="dark"] .btn.danger { color: #ff8a80; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .btn.danger { color: #ff8a80; } }
 .btn:disabled { opacity: .55; cursor: progress; }
+#btn-theme .ico-sun { display: none; }
+:root[data-theme="dark"] #btn-theme .ico-sun { display: block; }
+:root[data-theme="dark"] #btn-theme .ico-moon { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) #btn-theme .ico-sun { display: block; }
+  :root:not([data-theme="light"]) #btn-theme .ico-moon { display: none; }
+}
 .icon-btn { width: 36px; height: 36px; padding: 0; }
 .spin svg { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }

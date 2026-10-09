@@ -29,7 +29,7 @@
   const LS_KEY = "rasp.v2";
   const prefs = Object.assign(
     { lang: (navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "ru", myGroup: null, mode: "group", group: null, teacher: null, personal: [],
-      push: false, pushSynced: "", noticeSeen: "" },
+      push: false, pushSynced: "", noticeSeen: "", theme: null },
     readLS()
   );
   function readLS() { try { return JSON.parse(localStorage.getItem(LS_KEY)) || {}; } catch { return {}; } }
@@ -37,6 +37,15 @@
     try { localStorage.setItem(LS_KEY, JSON.stringify(prefs)); } catch { /* недоступно */ }
     pushToAndroid();
   }
+
+  // ------------------------------------------------------------ тема
+  const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
+  const isDark = () => (prefs.theme === "light" ? false : prefs.theme === "dark" ? true : systemDark.matches);
+  function applyTheme() {
+    if (prefs.theme === "light" || prefs.theme === "dark") document.documentElement.dataset.theme = prefs.theme;
+    else delete document.documentElement.dataset.theme;
+  }
+  applyTheme();
 
   // ------------------------------------------------------------ язык
   const L = () => (prefs.lang === "zh" ? "zh" : "ru");
@@ -308,6 +317,7 @@
     document.documentElement.lang = L();
     $$("[data-t]").forEach((el) => (el.textContent = t(el.dataset.t)));
     $$(".langs button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === L())));
+    $("#btn-theme").setAttribute("aria-pressed", String(isDark()));
     const n = prefs.personal.length;
     $("#personal-count").hidden = !n;
     $("#personal-count").textContent = n;
@@ -1028,6 +1038,8 @@
     loadFeedCache();
     restoreSelection();
     $$(".langs button").forEach((b) => (b.onclick = () => { prefs.lang = b.dataset.lang; savePrefs(); update(); }));
+    $("#btn-theme").onclick = () => { prefs.theme = isDark() ? "light" : "dark"; applyTheme(); savePrefs(); renderStatic(); };
+    systemDark.addEventListener("change", () => { if (!prefs.theme) renderStatic(); });
     $("#btn-personal").onclick = openList;
     $("#btn-notices").onclick = () => openNotices();
     $("#btn-refresh").onclick = localRefresh;

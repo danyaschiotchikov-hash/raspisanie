@@ -4,6 +4,7 @@ window.I18N = {
     ru: {
       appTitle: "Расписание",
       appSub: "Петрозаводская консерватория им. А.К. Глазунова",
+      theme: "Тема",
       byGroup: "Группа",
       byTeacher: "Преподаватель",
       programCourse: "Программа и курс",
@@ -160,6 +161,7 @@ window.I18N = {
     zh: {
       appTitle: "课程表",
       appSub: "彼得罗扎沃茨克国立格拉祖诺夫音乐学院",
+      theme: "主题",
       byGroup: "班级",
       byTeacher: "教师",
       programCourse: "培养层次与年级",
